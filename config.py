@@ -23,4 +23,5 @@ class Config:
         self.optimize_on_cpu=False
         self.fp16=False
         self.loss_scale=128
+        self.use_tpu=False
 
