@@ -32,35 +32,13 @@ def load_vocab(vocab_file):
 
     return vocab,index_vocab
 
-
-def printable_text(text):
-    """Returns text encoded in a way suitable for print or `tf.logging`."""
-
-    # These functions want `str` for both Python2 and Python3, but in one case
-    # it's a Unicode string and in the other it's a byte string.
-    if six.PY3:
-        if isinstance(text, str):
-            return text
-        elif isinstance(text, bytes):
-            return text.decode("utf-8", "ignore")
-        else:
-            raise ValueError("Unsupported string type: %s" % (type(text)))
-    elif six.PY2:
-        if isinstance(text, str):
-            return text
-        elif isinstance(text, unicode):
-            return text.encode("utf-8")
-        else:
-            raise ValueError("Unsupported string type: %s" % (type(text)))
-    else:
-        raise ValueError("Not running on Python2 or Python 3?")
-
-
-def convert_tokens_to_ids(vocab,tokens):
-    ids=[]
+def convert_tokens_to_ids(vocab, tokens):
+    """Converts a sequence of tokens into ids using the vocab."""
+    ids = []
     for token in tokens:
         ids.append(vocab[token])
-    return tokens
+    return ids
+
 
 def whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a peice of text."""
@@ -104,7 +82,7 @@ class BasicTokenizer(object):
             if self.do_lower_case:
                 token=token.lower()
                 token=self._run_strip_accents(token)
-            split_tokens.append(self._run_split_on_punc(token))
+            split_tokens.append(self._run_split_on_punc(token)[0])
 
         output_token=whitespace_tokenize(" ".join(split_tokens))
         return output_token

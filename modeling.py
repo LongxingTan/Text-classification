@@ -11,7 +11,7 @@ class BertConfig:
     def __init__(self,vocab_size,hidden_size=768,num_hidden_layer=12,num_attention_heads=12,intermediate_size=3072,
                  hidden_act='gelu',hidden_dropout_prob=0.1,attention_probs_dropout_prob=0.1,max_position_embedding=512,
                  type_vocab_size=16,initializer_range=0.02):
-        self.vocab_sie=vocab_size
+        self.vocab_size=vocab_size
         self.hiddden_size=hidden_size
         self.num_hidden_layer=num_hidden_layer
         self.num_attention_heads=num_attention_heads
@@ -19,7 +19,7 @@ class BertConfig:
         self.intermediate_size=intermediate_size
         self.hidden_dropout_prob=hidden_dropout_prob
         self.attention_probs_dropout_pron=attention_probs_dropout_prob
-        self.max_position_embeddings=max_position_embedding
+        self.max_position_embedding=max_position_embedding
         self.type_vocab_size=type_vocab_size
         self.initializer_range=initializer_range
 
@@ -45,15 +45,16 @@ class BertConfig:
 
 
 class BertModel(object):
-    def __init__(self,config,is_training,input_ids,input_mask=None,token_type_ids=None,use_one_hot_embeddings=False,scope=None):
-        config=copy.deepcopy(config)
-        if not is_training:
-            config.hidden_dropout_prob=0.0
-            config.attention_probs_dropout_prob=0.0
+    def __init__(self,bertconfig,is_training,input_ids,input_mask=None,token_type_ids=None,use_one_hot_embeddings=False,scope=None):
+        bertconfig=copy.deepcopy(bertconfig)
+        if is_training is not None:
+            bertconfig.hidden_dropout_prob=0.0
+            bertconfig.attention_probs_dropout_prob=0.0
 
         input_shape=get_shape_list(input_ids,expected_rank=2)
         batch_size=input_shape[0]
         seq_length=input_shape[1]
+
 
         if input_mask is None:
             input_mask=tf.ones(shape=[batch_size,seq_length],dtype=tf.int32)
@@ -63,36 +64,36 @@ class BertModel(object):
 
         with tf.variable_scope(scope,default_name='bert'):
             with tf.variable_scope('embeddings'):
-                (self.embedding_output,self.embedding_table)=embedding_lookup(input_ids=input_ids,vocab_size=config.vocab_size,
-                                                                              embedding_size=config.hidden_size,
-                                                                              initializer_range=config.initializer_range,
+                (self.embedding_output,self.embedding_table)=embedding_lookup(input_ids=input_ids,vocab_size=bertconfig.vocab_size,
+                                                                              embedding_size=bertconfig.hidden_size,
+                                                                              initializer_range=bertconfig.initializer_range,
                                                                               word_embedding_name="word_embeddings",
                                                                               use_one_hot_embeddings=use_one_hot_embeddings)
                 self.embedding_output=embedding_postprocessor(input_tensor=self.embedding_output,use_token_type=True,
-                                                              token_type_ids=token_type_ids,token_type_vocab_size=config.type_vocab_size,
+                                                              token_type_ids=token_type_ids,token_type_vocab_size=bertconfig.type_vocab_size,
                                                               token_type_embedding_name='token_type_embeddings',use_position_embeddings=True,
-                                                              position_embedding_name='position_embedding',initializer_range=config.initializer_range,
-                                                              max_position_embeddings=config.max_position_embedding,dropout_prob=config.hidden_dropout_prob)
+                                                              position_embedding_name='position_embedding',initializer_range=bertconfig.initializer_range,
+                                                              max_position_embeddings=bertconfig.max_position_embedding,dropout_prob=bertconfig.hidden_dropout_prob)
                 with tf.variable_scope('encoder'):
                     attention_mask=create_attention_mask_from_input_mask(input_ids,input_mask)
 
                     self.all_encoder_layers=transformer_model(input_tensor=self.embedding_output,
                                                               attention_mask=attention_mask,
-                                                              hidden_size=config.hidden_size,
-                                                              num_hidden_layers=config.num_hidden_layers,
-                                                              num_attention_heads=config.num_attention_heads,
-                                                              intermediate_size=config.intermediate_size,
-                                                              intermediate_act_fn=get_activation(config.hidden_act),
-                                                              hidden_dropout_prob=config.hidden_dropout_prob,
-                                                              attention_probs_dropout_prob=config.attention_probs_dropout_prob,
-                                                              initializer_range=config.initializer_range,
+                                                              hidden_size=bertconfig.hidden_size,
+                                                              num_hidden_layers=bertconfig.num_hidden_layers,
+                                                              num_attention_heads=bertconfig.num_attention_heads,
+                                                              intermediate_size=bertconfig.intermediate_size,
+                                                              intermediate_act_fn=get_activation(bertconfig.hidden_act),
+                                                              hidden_dropout_prob=bertconfig.hidden_dropout_prob,
+                                                              attention_probs_dropout_prob=bertconfig.attention_probs_dropout_prob,
+                                                              initializer_range=bertconfig.initializer_range,
                                                               do_return_all_layers=True)
                     self.sequence_output=self.all_encoder_layers[-1]
 
                     with tf.variable_scope('pooler'):
                         first_token_tensor=tf.squeeze(self.sequence_output[:,0:1,:],axis=1)
-                        self.pooled_output=tf.layers.dense(first_token_tensor,config.hidden_size,activation=tf.tanh,
-                                                           kernel_initializer=create_initializer(config.initializer_range))
+                        self.pooled_output=tf.layers.dense(first_token_tensor,bertconfig.hidden_size,activation=tf.tanh,
+                                                           kernel_initializer=create_initializer(bertconfig.initializer_range))
 
     def get_pooled_output(self):
         return self.pooled_output

@@ -22,7 +22,7 @@ import re
 import tensorflow as tf
 
 
-def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu):
+def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu=False):
     """Creates an optimizer training op."""
     global_step = tf.train.get_or_create_global_step()
 
