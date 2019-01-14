@@ -37,19 +37,15 @@ def create_model(bert_config,is_training,input_ids,input_mask,segment_ids,labels
         probabilities=tf.nn.softmax(logits,axis=-1)
         log_prob=tf.nn.log_softmax(logits,axis=-1)
 
-        onehot_labels=tf.onehot(labels,depth=num_labels,dtype=tf.float32)
+        onehot_labels=tf.one_hot(labels,depth=num_labels,dtype=tf.float32)
         per_example_loss=-tf.reduce_sum(onehot_labels*log_prob,axis=-1)
         loss=tf.reduce_mean(per_example_loss)
         return (loss,per_example_loss,logits,probabilities)
 
 
 
-
-
-
 def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
-                     num_train_steps, num_warmup_steps, use_tpu,
-                     use_one_hot_embeddings):
+                     num_train_steps, num_warmup_steps,use_one_hot_embeddings):
     """Returns `model_fn` closure for TPUEstimator."""
 
     def model_fn(features, labels, mode, params):  # pylint: disable=unused-argument
@@ -72,7 +68,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
 
         tvars = tf.trainable_variables()
         initialized_variable_names = {}
-        scaffold_fn = None
+        #scaffold_fn = None
         if init_checkpoint:
             (assignment_map, initialized_variable_names) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
             tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
@@ -85,7 +81,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
             tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
                             init_string)
 
-        output_spec = None
+        #output_spec = None
         if mode == tf.estimator.ModeKeys.TRAIN:
             train_op=optimization.create_optimizer(total_loss,learning_rate,num_train_steps,num_warmup_steps)
             output_spec=tf.estimator.EstimatorSpec(mode=mode,loss=total_loss,train_op=train_op)
@@ -116,64 +112,49 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
     return model_fn
 
 
-# This function is not used by this file but is still used by the Colab and
-# people who depend on it.
-def input_fn_builder(features, seq_length, is_training, drop_remainder):
-    """Creates an `input_fn` closure to be passed to TPUEstimator."""
+def file_based_input_fn_builder(input_file, seq_length, is_training,batch_size):
+  """Creates an `input_fn` closure to be passed to TPUEstimator."""
 
-    all_input_ids = []
-    all_input_mask = []
-    all_segment_ids = []
-    all_label_ids = []
+  name_to_features = {
+      "input_ids": tf.FixedLenFeature([seq_length], tf.int64),
+      "input_mask": tf.FixedLenFeature([seq_length], tf.int64),
+      "segment_ids": tf.FixedLenFeature([seq_length], tf.int64),
+      "label_ids": tf.FixedLenFeature([], tf.int64),
+  }
 
-    # each sample has a corresponding feature dict
-    # contains input id: token ids
-    # input mask: whether or not value is zero padding
-    # segment id: mask showing first part or second part of sequence
-    # label value
-    # just unpacks different types to a combined list
-    for feature in features:
-        all_input_ids.append(feature.input_ids)
-        all_input_mask.append(feature.input_mask)
-        all_segment_ids.append(feature.segment_ids)
-        all_label_ids.append(feature.label_id)
+  def _decode_record(record, name_to_features):
+    """Decodes a record to a TensorFlow example."""
+    example = tf.parse_single_example(record, name_to_features)
 
-    def input_fn(params):
-        """The actual input function."""
-        batch_size = params["batch_size"]
+    # tf.Example only supports tf.int64, but the TPU only supports tf.int32.
+    # So cast all int64 to int32.
+    for name in list(example.keys()):
+      t = example[name]
+      if t.dtype == tf.int64:
+        t = tf.to_int32(t)
+      example[name] = t
 
-        num_examples = len(features)
+    return example
 
-        # This is for demo purposes and does NOT scale to large data sets. We do
-        # not use Dataset.from_generator() because that uses tf.py_func which is
-        # not TPU compatible. The right way to load data is with TFRecordReader.
-        d = tf.data.Dataset.from_tensor_slices({
-            "input_ids":
-                tf.constant(
-                    all_input_ids, shape=[num_examples, seq_length],
-                    dtype=tf.int32),
-            "input_mask":
-                tf.constant(
-                    all_input_mask,
-                    shape=[num_examples, seq_length],
-                    dtype=tf.int32),
-            "segment_ids":
-                tf.constant(
-                    all_segment_ids,
-                    shape=[num_examples, seq_length],
-                    dtype=tf.int32),
-            "label_ids":
-                tf.constant(all_label_ids, shape=[num_examples], dtype=tf.int32),
-        })
+  def input_fn(params):
+    """The actual input function."""
+    #batch_size = params["batch_size"]
 
-        if is_training:
-            d = d.repeat()
-            d = d.shuffle(buffer_size=100)
+    # For training, we want a lot of parallel reading and shuffling.
+    # For eval, we want no shuffling and parallel reading doesn't matter.
+    d = tf.data.TFRecordDataset(input_file)
+    if is_training:
+      d = d.repeat()
+      d = d.shuffle(buffer_size=100)
 
-        d = d.batch(batch_size=batch_size, drop_remainder=drop_remainder)
-        return d
+    d = d.apply(
+        tf.contrib.data.map_and_batch(
+            lambda record: _decode_record(record, name_to_features),
+            batch_size=batch_size))
 
-    return input_fn
+    return d
+
+  return input_fn
 
 
 def main():
@@ -195,8 +176,7 @@ def main():
 
     model_fn=model_fn_builder(bert_config=bert_config,num_labels=len(label_list),init_checkpoint=config.init_checkpoint,
                               learning_rate=config.learning_rate,num_train_steps=num_train_steps,
-                              num_warmup_steps=num_warmup_steps,use_tpu=config.use_tpu,
-                              use_one_hot_embeddings=config.use_tpu)
+                              num_warmup_steps=num_warmup_steps,use_one_hot_embeddings=config.use_tpu)
 
     estimator = tf.estimator.Estimator(
         model_fn=model_fn,
@@ -217,11 +197,58 @@ def main():
             input_file=train_file,
             seq_length=config.max_seq_length,
             is_training=True,
-            drop_remainder=True)
+            batch_size=config.train_batch_size)
 
         # Start training
         estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
 
+    if config.do_eval:
+        eval_examples=online_processor.get_dev_axamples(config.data_dir)
+        num_eval_examples=len(eval_examples)
+        eval_file=os.path.join(config.data_dir,"eval_tf_record")
+
+        tf.logging.info("***** Running evaluation *****")
+        tf.logging.info("  Num examples = %d (%d actual, %d padding)",
+                        len(eval_examples), num_eval_examples,
+                        len(eval_examples) - num_eval_examples)
+        tf.logging.info("  Batch size = %d", config.eval_batch_size)
+
+        eval_steps=int(len(num_eval_examples/config.eval_batch_size))
+        eval_input_fn=file_based_input_fn_builder(input_file=eval_file,seq_length=config.max_seq_length,
+                                                  is_training=False,batch_size=config.eval_batch_size)
+        result=estimator.evaluate(input_fn=eval_input_fn,steps=eval_steps)
+        output_eval_file=os.path.join(config.output_dir,'eval_result.txt')
+        with tf.gfile.GFile(output_eval_file,'w') as writer:
+            for key in sorted(result.keys):
+                writer.write("%s = %s \n"%(key, str(result[key])))
+
+    if config.do_predict:
+        predict_examples=online_processor.get_test_examples(config.data_dir)
+        num_predict_examples=len(predict_examples)
+
+        predict_file=os.path.join(config.output_dir,"predict.tf_record")
+        file_based_convert_examples_to_features(predict_examples,label_list,config.max_seq_length,tokenizer,predict_file)
+
+        tf.logging.info("***** Running prediction*****")
+        tf.logging.info("  Num examples = %d (%d actual, %d padding)",
+                        len(predict_examples), num_predict_examples,
+                        len(predict_examples) - num_predict_examples)
+        tf.logging.info("  Batch size = %d", config.predict_batch_size)
+
+        predict_input_fn=file_based_input_fn_builder(input_file=predict_file,seq_length=config.max_seq_length,
+                                                     is_training=False,batch_size=config.predict_batch_size)
+        result=estimator.predict(input_fn=predict_input_fn)
+
+        output_predict_file=os.path.join(config.output_dir,"test_predict.tsv")
+        with tf.gfile.GFile(output_predict_file,'w') as writer:
+            num_written_lines=0
+            for (i,prediction) in enumerate(result):
+                probabilities=prediction['probabilities']
+                if i>num_predict_examples:
+                    break
+                output_line="\t".join(str(class_probability) for class_probability in probabilities)+"\n"
+                writer.write(output_line)
+                num_written_lines+=1
 
 
 if '__main__'==__name__:

@@ -39,8 +39,6 @@ class DataProcessor:
             return lines
 
 
-
-
 class OnlineProcessor(DataProcessor):
     def __init__(self):
         self.labels=set()

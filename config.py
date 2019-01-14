@@ -9,9 +9,11 @@ class Config:
         self.do_lower_case=True
         self.max_seq_length=128
         self.is_training=True
-        self.do_eval=False
+        self.do_eval=True
+        self.do_predict=False
         self.train_batch_size=32
         self.eval_batch_size=8
+        self.predict_batch_size=8
         self.learning_rate=5e-5
         self.num_train_epochs=3
         self.warmup_proportion=0.1
