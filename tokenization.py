@@ -2,6 +2,7 @@
 import six
 import collections
 import unicodedata
+from models._model_params import params
 
 def convert_to_unicode(text):
     if six.PY3:
@@ -29,6 +30,7 @@ def load_vocab(vocab_file):
             vocab[token]=index
             index_vocab[index]=token
             index+=1
+        params.update(vocab_size=len(vocab))
 
     return vocab,index_vocab
 
@@ -249,5 +251,6 @@ def _is_punctuation(char):
     if cat.startswith("P"):
         return True
     return False
+
 
 

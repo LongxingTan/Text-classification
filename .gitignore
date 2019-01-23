@@ -1,6 +1,8 @@
-/.idea/*
+.gitignore
+/.idea/
 /__pycache__/*
-/raw_data/*
+/data_raw/*
 /data/*
-/output/*
-/bert_pretrained/*
+/outputs/*
+/models/*
+!/models/*.py
