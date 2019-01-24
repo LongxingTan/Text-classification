@@ -34,6 +34,12 @@ class Embedding_layer():
             embeddings=tf.nn.embedding_lookup(self.embedding_table,x)
             return embeddings
 
+        elif embedding_type=="word2vec_static":
+            pass
+
+        elif embedding_type=="multi-channel":
+            pass
+
 
 
 

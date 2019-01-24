@@ -6,3 +6,4 @@
 /outputs/*
 /models/*
 !/models/*.py
+/bert_pretrained/*

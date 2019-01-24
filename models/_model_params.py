@@ -21,9 +21,14 @@ params=defaultdict(
     optimizer_adam_beta2=0.1,
     optimizer_adam_epsilon=10e-6,
 
+    # RNN model parameters
     lstm_hidden_size=128,
 
+    #Bert model parameters
+    bert_config_file='./bert_pretrained/chinese/bert_config.json',
+    bert_init_checkpoint='./bert_pretrained/chinese/bert_model.ckpt',
 )
+
 
 class Model_config(object):
     def __init__(self):
