@@ -1,13 +1,17 @@
-# Text_complaints_classification.
+# Text_classification.
 ---
 ## Overview
-Multi-class Text classification of Chinese customer complaints, for better understanding the customers' feedback of the product, to improve the product and customer satisfaction finally. DIfferent models are implemented by both tensorflow and keras:
-- Word representation. use chi-square+tfidf, pretrained word2vec, glove, elmo or concat result
-- Feature representation. use CNN, LSTM, GRU+Attention, HAN, SVM, XGBoost
+Multi-class Text classification of Chinese text. The common models are implemented by sklearn, tensorflow or keras:
+- Word level representation: chi-square+tfidf, word2vec, glove, fasttext or the concated one
+- Char level representation: elmo, bert
+- Feature representation: CNN, BiLSTM, GRU+Attention, Capsule, HAN, Self-attention, SVM, XGBoost
 
 ## Dependencies
-Tensorflow 1.3.0
+Python 3.6
+Tensorflow 1.12.0
+
+## Usage
+python run_classifier.py
 
 ## Rerefence
-
 
