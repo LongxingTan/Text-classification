@@ -7,8 +7,8 @@ Multi-class Text classification of Chinese text. The common models are implement
 - Feature representation: CNN, BiLSTM, GRU+Attention, Capsule, HAN, Self-attention, SVM, XGBoost
 
 ## Dependencies
-Python 3.6
-Tensorflow 1.12.0
+- Python 3.6
+- Tensorflow 1.12.0
 
 ## Usage
 python run_classifier.py
