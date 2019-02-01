@@ -67,8 +67,8 @@ def char_text(text):
 
 def tokenize_sentence(sentence,sep=' '):
     '''word segmentation for Chinese based on jieba. ALso refer to SnowNLP,pynlpir,thulac'''
-    jieba.load_userdict('../user_dict.txt')
-    stopwords=[line.strip() for line in open('../stop_words.txt','r',encoding='utf-8').readlines()]
+    jieba.load_userdict('../data/user_dict.txt')
+    stopwords=[line.strip() for line in open('../data/stop_words.txt','r',encoding='utf-8').readlines()]
     seglist=jieba.cut(sentence)
     wordlist='' if sep==' ' else []
     for seg in seglist:
@@ -165,7 +165,7 @@ def tfidf_weight(x_data,vocab,if_save=False):
             writer.writerows(feature)
     return x_data_tfidf,tfidf,feature
 
-def word_embed(vocabulary,embedding_type,embedding_size=300):
+def word_embed_trans(vocabulary,embedding_type,embedding_size=300):
     '''pretrained embedding matrix (trained by Wikipedia Chinese) for fine tuning
     Use different pre-trained word2vec is also a way to improve generalization'''
     if embedding_type=='word2vec':
@@ -239,7 +239,7 @@ def create_batch(data,batch_size,n_epochs=1,shuffle=True):
             yield shuffled_data[start_index:end_index]
 
 def create_data(sentence_length,sample=None):
-    x_data, y_data, n_classes = import_data('../CAC.csv')
+    x_data, y_data, n_classes = import_data('../data_raw/CAC.csv')
     if sample!=None:
         x_data, y_data = x_data[:sample], y_data[:sample]
         n_classes = len(np.unique(y_data))

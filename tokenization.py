@@ -31,7 +31,6 @@ def load_vocab(vocab_file):
             index_vocab[index]=token
             index+=1
         params.update(vocab_size=len(vocab))
-
     return vocab,index_vocab
 
 def convert_tokens_to_ids(vocab, tokens):

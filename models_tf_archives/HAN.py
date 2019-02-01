@@ -4,8 +4,8 @@
 #https://github.com/indiejoseph/doc-han-att/blob/master/model.py
 
 import tensorflow as tf
-from utils import *
-from Attention.config import *
+from models_tf_archives._utils import *
+
 
 
 class Config():
@@ -60,7 +60,7 @@ class HAN():
             if self.embedding_matrix is False:
                 self.embed_W=tf.Variable(tf.random_uniform([self.vocabulary_size,self.embedding_dim],-1.0,1.0),name='embed_W')
             else:
-                embedding_matrix = word_embed(word2index, self.embedding_type)
+                embedding_matrix = word_embed_trans(word2index, self.embedding_type)
                 self.embed_W=tf.get_variable(shape=[self.vocabulary_size,self.embedding_dim],
                                              initializer=tf.constant_initializer(embedding_matrix),
                                              trainable=True,name='embed_W')

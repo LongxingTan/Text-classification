@@ -12,7 +12,7 @@ class Config():
         self.embedding_matrix=False   #False or true
         self.embedding_type = 'word2vec'
         self.sentence_length=50
-        self.vocabulary_size=None
+        self.vocab_size=None
         self.filter_sizes=[2,4,6]
         self.filter_num=16
         self.learning_rate=10e-3

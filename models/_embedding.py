@@ -2,6 +2,10 @@ import tensorflow as tf
 import numpy as np
 import gensim
 
+# char level or word level,
+# pretrained model, solve the oov
+# vocab choose, filter the low or high frequency
+
 class Embedding_layer():
     def __init__(self,vocab_size,embed_size):
         super(Embedding_layer,self).__init__()
@@ -11,7 +15,7 @@ class Embedding_layer():
     def build(self,_):
         pass
 
-    def __call__(self,x,embedding_type='random',embedding_file='/',vocab_file='/'):
+    def __call__(self,x,embedding_type='random',embedding_file='/',vocab=None):
 
         if embedding_type=='random':
             self.embedding_table = tf.Variable(tf.random_uniform([self.vocab_size, self.embed_size], -1.0, 1.0),
@@ -24,7 +28,7 @@ class Embedding_layer():
             embedding_vocab=gensim.models.KeyedVectors.load_word2vec_format(embedding_file,binary=True,
                                                                             encoding='utf-8',unicode_errors='ignore')
             embedding_table=np.zeros((self.vocab_size,self.embed_size))
-            for word,i in vocab_file.items():
+            for word,i in vocab.items():
                 if word in embedding_vocab.vocab:
                     embedding_table[i]=embedding_vocab[word]
                 else:
@@ -37,14 +41,13 @@ class Embedding_layer():
         elif embedding_type=="word2vec_static":
             pass
 
-        elif embedding_type=="multi-channel":
+        elif embedding_type=='glove_static':
             pass
 
+        elif embedding_type=='fasttext_static':
+            pass
 
-
-
-
-
-
+        elif embedding_type=="multi-channel":
+            pass
 
 

@@ -8,7 +8,7 @@ from models_tf_archives._utils import *
 class Config():
     def __init__(self):
         self.embeddig_dim=300
-        self.embedding_matrix=True   #False or true
+        self.embedding_matrix=False   #False or true
         self.sentence_length=50
         self.filter_sizes=[2,4,6]
         self.filter_num=16
@@ -86,7 +86,7 @@ class textCNN():
             if self.embedding_matrix is False:
                 self.W = tf.Variable(tf.random_uniform([self.vocabulary_size, self.embedding_dim], -1.0, 1.0), name='embedding_W')
             else:
-                embedding_matrix = word_embed(word2index,'word2vec')
+                embedding_matrix = word_embed_trans(word2index,'word2vec')
                 self.W = tf.get_variable(name="W", shape=[self.vocabulary_size, self.embedding_dim],
                                          initializer=tf.constant_initializer(embedding_matrix), trainable=True)
             embedding_chars=tf.nn.embedding_lookup(self.W,self.input_x)  #[None,sentence_length,embedding_dim]
@@ -187,7 +187,7 @@ def textCNN_predict_new_data(x_new_data):
     return y_new_index,y_new_prob
 
 if '__main__' == __name__:
-    x_data, y_data, n_classes = import_data('../CAC.csv')
+    x_data, y_data, n_classes = import_data('../data_raw/CAC.csv')
     #x_data, y_data = x_data[:100], y_data[:100] ##delete
     #n_classes = len(np.unique(y_data)) ##delete
     x_token = x_data.apply(tokenize_sentence)
@@ -201,6 +201,7 @@ if '__main__' == __name__:
     y_onehot = label_binarize(y_index, np.arange(n_classes))
     x_train, x_test, y_train, y_test = train_test_split(x_token_index, y_onehot, test_size=0.1, random_state=0)
 
+
     #tfidf weight
     #x_train_label=[[index2word[word] for word in sentence] for sentence in x_train]
     x_countvec, countvec = countvectorize(x_token)
@@ -208,10 +209,11 @@ if '__main__' == __name__:
     x_vec_chi_tfidf, tfidf, feature = tfidf_weight(x_token, vocab_chi, if_save=False)
     tfidf_feature = dict(feature)
 
+
     #CNN
     textCNN_train(x_train, y_train, x_test, y_test,sentence_length, vocabulary_size=len(word2index), embedding_dim=config.embeddig_dim,
                   filter_sizes=config.filter_sizes, filter_num=config.filter_num, n_classes=n_classes,
-                  embedding_matrix=config.embedding_matrix, batch_size=config.batch_size,n_epochs=config.nepochs,l2_reg=0.0,tfidf_feature=tfidf_feature)
+                  embedding_matrix=config.embedding_matrix, batch_size=config.batch_size,n_epochs=config.nepochs,l2_reg=0.0,tfidf_feature=False)
 
     y_new_index,y_new_prob=textCNN_predict_new_data(x_test)
     y_new_label = [index2label[i] for i in y_new_index]
@@ -223,7 +225,7 @@ if '__main__' == __name__:
         w.writerow(('Description','Words', 'Label', 'Label_predicted','Probability'))
         w.writerows(zip(x_test,x_test_label, y_test_label, y_new_label,y_new_prob))
 
-    f1=sk.metrics.f1_score(y_test_index,y_new_index,average='macro')
+    f1=sk.metrics.f1_score(y_test_index,y_new_index,average='micro')
     confusion_matrix=sk.metrics.confusion_matrix(y_test_label,y_new_label)
     print('F1 score:',f1)
     print(confusion_matrix)

@@ -3,6 +3,30 @@ import tensorflow as tf
 import datetime
 from models_tf_archives._utils import *
 
+class Config():
+    def __init__(self):
+        self.embedding_dim=300
+        self.embedding_matrix=False #False or true
+        self.embedding_type='word2vec'
+        self.sentence_length=50
+        self.tfidf=True
+        self.chi_k=400
+
+        self.lstm_hidden_size=300
+        self.gru_hidden_size=128
+        self.attention_hidden_size=64
+        self.l2_reg=0.0
+
+        self.learning_rate=10e-3
+        self.batch_size=128
+        self.n_epochs=10
+        self.save_per_epoch=10
+
+        self.filter_sizes=[2,4,6]
+        self.filter_num=16
+
+config = Config()
+
 
 class RCNN():
     def __init__(self,session,x_train,y_train, x_test, y_test,vocabulary_size):
@@ -36,7 +60,7 @@ class RCNN():
                 W_embed=tf.Variable(name='embed_w',initial_value=tf.random_uniform(
                     [self.vocabulary_size,self.embedding_dim],-1.0,1.0),dtype=tf.float32)
             else:
-                embedding_matrix = word_embed(word2index, self.embedding_type)
+                embedding_matrix = word_embed_trans(word2index, self.embedding_type)
                 W_embed=tf.get_variable(shape=[self.vocabulary_size,self.embedding_dim],name='embed_w',
                                         initializer=tf.constant_initializer(embedding_matrix),trainable=True)
             self.embed=tf.nn.embedding_lookup(W_embed,self.input_x) #[batch_size,sentence_length,embedding_dim]

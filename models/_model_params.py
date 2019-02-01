@@ -7,13 +7,14 @@ params=defaultdict(
     num_train_epochs=10,
     seq_length=50,
     vocab_size=None,
+    chinese_seg='char', #word or char
     embedding_size=300,
-    kernel_sizes=[2,3,4],
-    filters=64,
+    kernel_sizes=[2,4,6,14],
+    filters=32,
     n_class=None,
     model_dir='./outputs',
     data_dir='./data',
-    output_dir='./output',
+    output_dir='./outputs',
     log_dir='./log',
     learning_rate=10e-3,
     learning_rate_warmup_steps=500,
@@ -23,10 +24,19 @@ params=defaultdict(
 
     # RNN model parameters
     lstm_hidden_size=128,
+    gru_hidden_size=128,
+    attention_hidden_size=64,
 
     #Bert model parameters
-    bert_config_file='./bert_pretrained/chinese/bert_config.json',
-    bert_init_checkpoint='./bert_pretrained/chinese/bert_model.ckpt',
+    bert_config_file='./pretrained/chinese/bert_config.json',
+    bert_init_checkpoint='./pretrained/chinese/bert_model.ckpt',
+    #word2vec pretrained
+    word2vec='/pretrained/cn.cbow.bin',
+
+    #
+    len_train_examples=None,
+    len_eval_examples=None,
+    len_test_examples=None,
 )
 
 

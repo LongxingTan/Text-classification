@@ -4,7 +4,7 @@ from models_tf_archives._utils import *
 class Config():
     def __init__(self):
         self.embedding_dim=300
-        self.embedding_matrix=True   #False or true
+        self.embedding_matrix=False #False or true
         self.embedding_type='word2vec'
         self.sentence_length=50
         self.tfidf=True
@@ -58,7 +58,7 @@ class GRU_Attention():
                 self.embedding_W = tf.Variable(tf.random_uniform([self.vocabulary_size, self.embedding_dim], -1.0, 1.0),
                                                name='embedding_W')
             else:
-                self.embedding_matrix=word_embed(word2index,'word2vec')
+                self.embedding_matrix=word_embed_trans(word2index,'word2vec')
                 self.embedding_W=tf.get_variable(name='embedding_W',shape=[self.vocabulary_size,self.embedding_dim],initializer=tf.constant_initializer(self.embedding_matrix),trainable=True)
 
             self.embedding_out=tf.nn.embedding_lookup(self.embedding_W,self.input_x)
@@ -171,7 +171,7 @@ class GRU_Attention():
 
 
 if '__main__' == __name__:
-    x_train, x_test, y_train, y_test, word2index,n_classes,index2word,index2label,tfidf_feature=create_data(sentence_length=config.sentence_length,sample=None)
+    x_train, x_test, y_train, y_test, word2index, n_classes, index2word, index2label=create_data(sentence_length=config.sentence_length,sample=None)
     sess = tf.Session()
     gru_att=GRU_Attention(sess,x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test,vocabulary_size=len(word2index),tfidf_feature=tfidf_feature)
     gru_att.train()
@@ -187,4 +187,3 @@ if '__main__' == __name__:
         w = csv.writer(file, delimiter=';')
         w.writerow(( 'Words', 'Label', 'Label_predicted', 'Probability'))
         w.writerows(zip(x_new_label, y_test_label, y_new_label, y_new_prob))
-

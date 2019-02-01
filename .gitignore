@@ -6,4 +6,5 @@
 /outputs/*
 /models/*
 !/models/*.py
-/bert_pretrained/*
+/pretrained/*
+*.csv

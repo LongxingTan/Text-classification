@@ -7,7 +7,7 @@ import os
 class Config():
     def __init__(self):
         self.embedding_dim=300
-        self.embedding_matrix=True   #False or true
+        self.embedding_matrix=False   #False or true
         self.embedding_type='word2vec'
         self.sentence_length=50
         self.tfidf=True
@@ -59,7 +59,7 @@ class biLSTM():
             if self.embedding_matrix is False:
                 self.W = tf.Variable(tf.random_uniform([self.vocabulary_size, self.embedding_dim], -1.0, 1.0), name='embedding_W')
             else:
-                embedding_matrix = word_embed(word2index, 'word2vec')
+                embedding_matrix = word_embed_trans(word2index, 'word2vec')
                 self.W = tf.get_variable(name="W", shape=[self.vocabulary_size, self.embedding_dim],
                                          initializer=tf.constant_initializer(embedding_matrix), trainable=True)
             self.embedding_chars=tf.nn.embedding_lookup(self.W,self.input_x)
@@ -180,13 +180,13 @@ class biLSTM():
 
 
 if '__main__' == __name__:
-    x_train, x_test, y_train, y_test, word2index,n_classes,index2word,index2label,tfidf_feature=create_data(sentence_length=config.sentence_length,sample=None,chi_k=config.chi_k)
+    x_train, x_test, y_train, y_test, word2index,n_classes,index2word,index2label=create_data(sentence_length=config.sentence_length,sample=None)
 
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5)
     configgpu = tf.ConfigProto(allow_soft_placement=True, gpu_options=gpu_options)
     sess = tf.Session(config=configgpu)
 
-    bilstm=biLSTM(sess,x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test,vocabulary_size=len(word2index),tfidf_feature=tfidf_feature)
+    bilstm=biLSTM(sess,x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test,vocabulary_size=len(word2index),tfidf_feature=False)
     bilstm.train()
     bilstm.test()
     y_new_index,y_new_prob=bilstm.predict(x_test)
