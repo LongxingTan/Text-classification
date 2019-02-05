@@ -4,7 +4,6 @@ import datetime
 from models_tf_archives._utils import *
 
 
-
 class Config():
     def __init__(self):
         self.embeddig_dim=300
@@ -188,14 +187,21 @@ def textCNN_predict_new_data(x_new_data):
 
 if '__main__' == __name__:
     x_data, y_data, n_classes = import_data('../data_raw/CAC.csv')
-    #x_data, y_data = x_data[:100], y_data[:100] ##delete
-    #n_classes = len(np.unique(y_data)) ##delete
+    x_data, y_data = x_data[:100], y_data[:100] ##delete
+    n_classes = len(np.unique(y_data)) ##delete
     x_token = x_data.apply(tokenize_sentence)
     #sentence_padded, sentence_length=pad_sentence(x_token,sentence_length=config.sentence_length)
     x_token_pad, sentence_length = pad_sentence(x_token,sentence_length=config.sentence_length)
     word2index, index2word = word_index_transform(x_token_pad)
     logging.info("vocabulary size: %s" % len(word2index))
     x_token_index = [[word2index[i] for i in sentence] for sentence in x_token_pad]
+
+    print(x_token_index)
+    print(x_token_pad[0])
+    print(x_token[0])
+    print(x_data[0])
+
+    '''
     label2index, index2label = word_index_transform(y_data[:, np.newaxis])
     y_index = [label2index[i] for i in y_data]
     y_onehot = label_binarize(y_index, np.arange(n_classes))
@@ -229,4 +235,5 @@ if '__main__' == __name__:
     confusion_matrix=sk.metrics.confusion_matrix(y_test_label,y_new_label)
     print('F1 score:',f1)
     print(confusion_matrix)
+    '''
 

@@ -2,7 +2,7 @@
 import six
 import collections
 import unicodedata
-from models._model_params import params
+from model_params import params
 
 def convert_to_unicode(text):
     if six.PY3:

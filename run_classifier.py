@@ -2,13 +2,15 @@ import os
 import csv
 import logging
 import tensorflow as tf
-from models._model_params import params
-from models.cnn import TextCNN
+from model_params import params
 from models.bert import TextBert,get_assignment_map_from_checkpoint
 from models.bi_lstm import Bi_LSTM
+from models.cnn import TextCNN
+from models.self_attention import Self_attention
+from models.gru_attention import GRU_Attention
 from prepare_inputs import OnlineProcessor,file_based_input_fn_builder,input_fn_builder
 from models._loss import create_loss
-from models._optimization import create_optimizer_basic_adam,create_optimizer_warmup_adam
+from models._optimization import create_optimizer_basic_adam
 from models._eval import create_eval
 
 
@@ -43,7 +45,6 @@ def model_fn_builder(textmodel,init_checkpoint=None):
         probabilities = tf.nn.softmax(logits, name='softmax_tensor')
 
 
-
         if init_checkpoint:
             tvars = tf.trainable_variables()
             initialized_variable_names = {}
@@ -75,9 +76,11 @@ def model_fn_builder(textmodel,init_checkpoint=None):
 
         else:
             train_op=create_optimizer_basic_adam(loss,learning_rate=params['learning_rate'])
+            eval_metric_ops = create_eval(targets, prediction_label)
             return tf.estimator.EstimatorSpec(mode=mode,
                                               loss=loss,
-                                              train_op=train_op)
+                                              train_op=train_op,
+                                              eval_metric_ops=eval_metric_ops)
     return model_fn
 
 
@@ -128,7 +131,8 @@ if __name__=="__main__":
     train_features, dev_features, test_features=prepare_input()
     #run_classifier(textmodel=TextBert,init_checkpoint=params['bert_init_checkpoint'])
     #run_classifier(textmodel=TextCNN,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
-    run_classifier(textmodel=Bi_LSTM,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
+    #run_classifier(textmodel=Bi_LSTM,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
+    run_classifier(textmodel=GRU_Attention, init_checkpoint=None, train_features=train_features, dev_features=dev_features,test_features=test_features)
 
     label_dict = {}
     reader = csv.reader(open('label_dict.csv', 'r'))
@@ -144,8 +148,3 @@ if __name__=="__main__":
             for row in reader:
                 row[0] = label_dict[row[1]]
                 writer.writerow(row)
-
-
-
-
-

@@ -1,12 +1,10 @@
-import tensorflow as tf
 from models._embedding import Embedding_layer
-from models._model_params import *
+from model_params import params
 
 
 class Transformer(object):
-    def __init__(self, params, train):
+    def __init__(self, train):
         self.train = train
-        self.params = params
         self.embedding_layer = Embedding_layer(params['vocab_size'], params['embedding_size'])
 
     def build(self, inputs):

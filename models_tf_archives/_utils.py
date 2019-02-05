@@ -66,7 +66,7 @@ def char_text(text):
     char_text=[[word for word in sentence.split()] for sentence in text]
 
 def tokenize_sentence(sentence,sep=' '):
-    '''word segmentation for Chinese based on jieba. ALso refer to SnowNLP,pynlpir,thulac'''
+    '''word segmentation for Chinese based on jieba. Also refer to SnowNLP,pynlpir,thulac'''
     jieba.load_userdict('../data/user_dict.txt')
     stopwords=[line.strip() for line in open('../data/stop_words.txt','r',encoding='utf-8').readlines()]
     seglist=jieba.cut(sentence)
@@ -77,6 +77,8 @@ def tokenize_sentence(sentence,sep=' '):
                 wordlist+=seg+' '
             else:
                 wordlist.append(seg)
+        else:
+            continue
     return wordlist
 
 def pad_sentence(x_data,sentence_length):

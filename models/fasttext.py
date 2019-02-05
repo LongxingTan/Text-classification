@@ -1,9 +1,8 @@
-import tensorflow as tf
 from models._embedding import Embedding_layer
-from models._model_params import *
+from model_params import params
 
 
-class Bi_LSTM(object):
+class FastText(object):
     def __init__(self, params, train):
         self.train = train
         self.params = params

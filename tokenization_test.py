@@ -2,7 +2,7 @@ import unicodedata
 import jieba
 #import snownlp
 #import thulac
-from models._model_params import params
+from model_params import params
 import collections
 
 
@@ -15,22 +15,28 @@ def convert_to_unicode(text):
         raise ValueError("unsupported text string type: %s" % (type(text)))
 
 
-def create_vocab():
+def create_vocab(chinese_seg):
     from prepare_inputs import OnlineProcessor
     vocab = set()
     vocab.update(['[PAD]','[SEP]','[CLS]','[unused1]','[unused2]','[unused3]','[unused4]','[unused5]','[unused6]'])
 
-    online = OnlineProcessor(seq_lenth=params["seq_length"])
-    train = online.get_train_examples(data_dir=params['data_dir'])
-    tokenizer = BasicTokenizer(chinese_seg='word')
+    with open('./data/vocab_word.txt','w',encoding='utf-8') as f:
+        for word in vocab:
+            f.write('%s\n'% word)
 
-    for example in train:
+    tokenizer = BasicTokenizer(chinese_seg='word')
+    online = OnlineProcessor(seq_length=params["seq_length"],chinese_seg=chinese_seg)
+    online.get_train_examples(data_dir=params['data_dir'])
+
+    for example in online.examples:
         vocab.update(tokenizer.tokenize(example.text_a))
 
     with open('./data/vocab_word.txt','w',encoding='utf-8') as f:
         for word in vocab:
             f.write('%s\n'% word)
     f.close()
+
+
 
 
 def load_vocab(vocab_file):
@@ -63,11 +69,9 @@ def convert_tokens_to_ids(vocab, tokens):
     return ids
 
 
-
-
 class BasicTokenizer(object):
-    def __init__(self,vocab_file,chinese_seg='word',do_lower_case=True):
-        self.vocab, self.index_vocab = load_vocab(vocab_file)
+    def __init__(self,chinese_seg='word',do_lower_case=True):
+        #self.vocab, self.index_vocab = load_vocab(vocab_file)
         self.do_lower_case=do_lower_case
         self.chinese_seg=chinese_seg
 
@@ -75,7 +79,6 @@ class BasicTokenizer(object):
         text=convert_to_unicode(text)
         text=self._clean_text(text)
 
-        vocab={}
         if self.chinese_seg=="char":
             text=self._tokenize_chinese_chars(text)
         elif self.chinese_seg=="word":
@@ -92,8 +95,9 @@ class BasicTokenizer(object):
         output_tokens=self._whitespace_tokenize(" ".join(split_tokens))
         return output_tokens
 
-    def convert_tokens_to_ids(self,tokens):
-        return convert_tokens_to_ids(self.vocab,tokens)
+    def convert_tokens_to_ids(self,vocab_file,tokens):
+        vocab, index_vocab = load_vocab(vocab_file)
+        return convert_tokens_to_ids(vocab,tokens)
 
 
     def _clean_text(self,text):
@@ -121,6 +125,7 @@ class BasicTokenizer(object):
         return "".join(output)
 
     def _token_chinese_words(self,text):
+        jieba.load_userdict('./data/user_dict.txt')
         wordlist = jieba.lcut(text,HMM=False)
         #self.vocab.update([i for i in ])
         #print("/".join(jieba.cut(text)))
@@ -241,12 +246,10 @@ def go_subword_list(input_list,result):
 
 
 if __name__=="__main__":
-    #tokenizer=BasicTokenizer(chinese_seg='word')
-    #tokenizer.tokenize("你好，中国。请问各位大神，我的是15改款C200L运动前几天显示辅助蓄电池故障")
 
-    create_vocab()
+    tokenizer=BasicTokenizer(chinese_seg='word')
+    words=tokenizer.tokenize("2014-01-06 客户于露女士三个工作日外第五次投诉：针对其反映的C 260车辆，因车辆在行驶中及冷车启动时出现异响问题送修至北京保利星徽。经销商对车辆检测后告知需要更换助力泵。客户非常不满意，质疑产品质量。另外反映车辆还存在异味问题。客户对此不能接受，要求厂家回复一事，至今没有工作人员与其联系。客户再次致电表示希望由厂家给予解答，助力泵是不是两年或三年就会坏的，还是质量就有问题，客户希望得到专业的解答，其次客户希望由北京奔驰给予合理的解决方案，同时客户还表示投诉反馈的等待时间太长，不能接受，服务水平问题。现在客户非常着急，催促厂家的工作人员核实情况后尽快给予回复解决")
+    print(words)
 
-    vocab, index_vocab=load_vocab('./data/vocab_word.txt')
-    print(vocab)
-    vocab2, index_vocab2 = load_vocab('./data/vocab.txt')
-    print(vocab2)
+    create_vocab('word')
+

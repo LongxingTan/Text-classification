@@ -1,7 +1,5 @@
-
-import tensorflow as tf
 from models._bert_model import *
-from models._model_params import params
+from model_params import params
 
 
 class TextBert(object):

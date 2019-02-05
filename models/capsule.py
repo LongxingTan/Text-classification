@@ -1,6 +1,6 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-from models._model_params import *
+from model_params import params
 
 
 class Capsule(object):
