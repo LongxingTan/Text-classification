@@ -1,5 +1,5 @@
 import tensorflow as tf
-from sklearn.metrics import accuracy_score, f1_score,roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score,roc_auc_score,precision_score,recall_score
 
 
 def metric_fn():
@@ -8,12 +8,8 @@ def metric_fn():
 
 def create_eval(labels,predictions):
     accuracy=tf.metrics.accuracy(labels,predictions)
-    precision=tf.metrics.precision(labels,predictions) #Todo
-    recall=tf.metrics.recall(labels,predictions) #Todo
-
-    eval_metrics = {'acc': accuracy,'p':precision,'r':recall}
+    eval_metrics = {'acc': accuracy}
     return eval_metrics
-
 
 
 
@@ -37,10 +33,10 @@ def create_eval_binary(labels,predictions):
     return eval_metrics
 
 def create_eval_sk(labels,predictions):
-
     accuracy = accuracy_score(labels,predictions)
+    pre=precision_score(labels,predictions,average='micro')
+    rec=recall_score(labels,predictions,average='micro')
     micro_f1=f1_score(labels,predictions,average='micro')
     auc=roc_auc_score(labels,predictions,average='micro')
-    eval_metrics = {'accuracy': accuracy,'f1':micro_f1,'auc':auc}
-
+    eval_metrics = {'accuracy': accuracy,'precision':pre,'recall':rec,'f1':micro_f1,'auc':auc}
     return eval_metrics

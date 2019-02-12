@@ -4,7 +4,6 @@ epsilon = 1e-9
 
 class Capsule_layer:
     def __init__(self,n_vector,if_routing=True,layer_type='FC'):
-
         self.n_vector=n_vector
         self.if_routing=if_routing
         self.layer_type=layer_type

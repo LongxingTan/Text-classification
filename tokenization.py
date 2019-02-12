@@ -37,7 +37,8 @@ def convert_tokens_to_ids(vocab, tokens):
     """Converts a sequence of tokens into ids using the vocab."""
     ids = []
     for token in tokens:
-        ids.append(vocab[token])
+        if token in vocab.keys():
+            ids.append(vocab[token])
     return ids
 
 
@@ -50,20 +51,20 @@ def whitespace_tokenize(text):
     return tokens
 
 class FullTokenizer(object):
-
-    def __init__(self,vocab_file,do_lower_case=True):
-        self.vocab,self.index_vocab=load_vocab(vocab_file)
+    def __init__(self,do_lower_case=True):
         self.basic_tokenizer= BasicTokenizer(do_lower_case=do_lower_case)
-        self.wordpiece_tokenizer=WordpieceTokenizer(vocab=self.vocab)
+        self.wordpiece_tokenizer=WordpieceTokenizer()
 
     def tokenize(self,text):
         split_tokens=[]
         for token in self.basic_tokenizer.tokenize(text):
-            for sub_token in self.wordpiece_tokenizer.tokenize(token):
-                split_tokens.append(sub_token)
+            split_tokens.append(token)
+            #for sub_token in self.wordpiece_tokenizer.tokenize(token):
+                #split_tokens.append(sub_token)
         return split_tokens
 
-    def convert_tokens_to_ids(self,tokens):
+    def convert_tokens_to_ids(self,vocab_file,tokens):
+        self.vocab, self.index_vocab = load_vocab(vocab_file)
         return convert_tokens_to_ids(self.vocab,tokens)
 
 
@@ -157,8 +158,8 @@ class BasicTokenizer(object):
 class WordpieceTokenizer(object):
     """Runs WordPiece tokenization."""
 
-    def __init__(self, vocab, unk_token="[UNK]", max_input_chars_per_word=100):
-        self.vocab = vocab
+    def __init__(self, unk_token="[UNK]", max_input_chars_per_word=100):
+        #self.vocab = vocab
         self.unk_token = unk_token
         self.max_input_chars_per_word = max_input_chars_per_word
 

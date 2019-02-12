@@ -8,3 +8,5 @@
 !/models/*.py
 /pretrained/*
 *.csv
+test.py
+test2.py

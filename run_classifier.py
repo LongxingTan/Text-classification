@@ -8,10 +8,13 @@ from models.bi_lstm import Bi_LSTM
 from models.cnn import TextCNN
 from models.self_attention import Self_attention
 from models.gru_attention import GRU_Attention
+from models.capsule import Capsule
+from models.c_lstm import C_LSTM
+from models.rcnn import RCNN
 from prepare_inputs import OnlineProcessor,file_based_input_fn_builder,input_fn_builder
 from models._loss import create_loss
 from models._optimization import create_optimizer_basic_adam
-from models._eval import create_eval
+from models._eval import create_eval,create_eval_sk
 
 
 # without logging configuration, tensorflow won't print the training information
@@ -28,22 +31,16 @@ def prepare_input():
     return train_features,dev_features,test_features
 
 
-
 def model_fn_builder(textmodel,init_checkpoint=None):
     def model_fn(features, labels, mode):
         inputs, targets = features['input_ids'], features["label_ids"]
-
-
         model=textmodel(training=(mode==tf.estimator.ModeKeys.TRAIN))
-
         logits = model(inputs, targets)
-
         targets_onehot = tf.one_hot(targets, depth=params['n_class'],dtype=tf.float32)
 
         loss = create_loss(logits=logits, y_onehot=targets_onehot, loss_type='cross_entropy')
         prediction_label = tf.argmax(logits, -1,output_type=tf.int32)
         probabilities = tf.nn.softmax(logits, name='softmax_tensor')
-
 
         if init_checkpoint:
             tvars = tf.trainable_variables()
@@ -57,18 +54,16 @@ def model_fn_builder(textmodel,init_checkpoint=None):
                 tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape, init_string)
 
 
-
         if mode == tf.estimator.ModeKeys.PREDICT:
-            print("Start predict ****")
+            tf.logging.info("**** Start predict ****")
             prediction_dict = {"labels": prediction_label,
-                           'probabilities':probabilities}
+                               'probabilities':probabilities}
             return tf.estimator.EstimatorSpec(mode=mode,
                                               predictions=prediction_dict)
 
 
         elif mode == tf.estimator.ModeKeys.EVAL:
-            print("Start evaluate ****")
-
+            tf.logging.info("**** Start evaluate ****")
             eval_metric_ops = create_eval(targets, prediction_label)
             return tf.estimator.EstimatorSpec(mode=mode,
                                               loss=loss,
@@ -104,7 +99,7 @@ def run_classifier(textmodel,init_checkpoint=None,train_features=None,dev_featur
                                               is_training=False)
     result=estimator.evaluate(input_fn=eval_input_fn,steps=eval_steps)
 
-    output_eval_file=os.path.join(params['output_dir'], '1eval_result.txt')
+    output_eval_file=os.path.join(params['output_dir'], 'eval_result.txt')
     with tf.gfile.GFile(output_eval_file,'w') as writer:
         for key in sorted(result.keys()):
             tf.logging.info(" %s = %s",key,str(result[key]))
@@ -121,30 +116,56 @@ def run_classifier(textmodel,init_checkpoint=None,train_features=None,dev_featur
     predict_file=os.path.join(params['output_dir'], 'test_result.csv')
     with tf.gfile.GFile(predict_file, 'w') as writer:
         for i,prediction in enumerate(result):
-
             label=prediction['labels']
-            output_line=",".join(['text',str(label)])+'\n'
+            probability=prediction['probabilities']
+            output_line=",".join(['text',str(label),str(probability)])+'\n'
             writer.write(output_line)
 
 
 if __name__=="__main__":
     train_features, dev_features, test_features=prepare_input()
-    #run_classifier(textmodel=TextBert,init_checkpoint=params['bert_init_checkpoint'])
-    #run_classifier(textmodel=TextCNN,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
-    #run_classifier(textmodel=Bi_LSTM,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
-    run_classifier(textmodel=GRU_Attention, init_checkpoint=None, train_features=train_features, dev_features=dev_features,test_features=test_features)
 
-    label_dict = {}
+    #run_classifier(textmodel=TextBert,init_checkpoint=params['bert_init_checkpoint'])
+    run_classifier(textmodel=TextCNN,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
+    #run_classifier(textmodel=Bi_LSTM,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
+    #run_classifier(textmodel=GRU_Attention, init_checkpoint=None, train_features=train_features, dev_features=dev_features,test_features=test_features)
+    #run_classifier(textmodel=Self_attention, init_checkpoint=None, train_features=train_features, dev_features=dev_features, test_features=test_features)
+    #run_classifier(textmodel=RCNN, init_checkpoint=None, train_features=train_features,dev_features=dev_features, test_features=test_features)
+    #run_classifier(textmodel=Capsule, init_checkpoint=None, train_features=train_features,dev_features=dev_features, test_features=test_features)
+
+
+
+    label,predict=[],[]
+    index2label, label2index = {}, {}
     reader = csv.reader(open('label_dict.csv', 'r'))
 
     for row in reader:
-        label_dict.update({row[1]: row[0]})
+        index2label.update({row[1]: row[0]})
+        label2index.update({row[0]: row[1]})
 
-    with open('./outputs/test_result.csv', 'r') as f:
-        reader = csv.reader(f)
-        with open('out.csv', 'w', newline='') as ouf:
-            writer = csv.writer(ouf)
+    with open('out.csv', 'w', newline='', encoding='utf-8') as out:
+        writer = csv.writer(out)
+        result = []
+        for line in csv.reader(open('./outputs/test_result.csv', 'r')):
+            result.append(line)
 
-            for row in reader:
-                row[0] = label_dict[row[1]]
-                writer.writerow(row)
+        for i, row_test in enumerate(csv.reader(open('./data/test.csv', 'r', encoding="utf-8"))):
+            row = []
+            row.append(row_test[0])
+            row.append(row_test[1])
+
+            if row_test[1] in label2index.keys():
+                row.append(label2index[row_test[1]])
+                label.append(label2index[row_test[1]])
+            else:
+                row.append(1000)
+                label.append(1000)
+
+            row.append(index2label[result[i][1]])
+            row.append(result[i][1])
+            predict.append(result[i][1])
+            row.append(result[i][2])
+            writer.writerow(row)
+
+    eval=create_eval_sk(labels=label,predictions=predict)
+    print('evaluation:',eval)

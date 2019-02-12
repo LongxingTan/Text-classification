@@ -1,6 +1,5 @@
-from models_archives.capsule_layer import *
-from Capsule.config import config
-from utils import *
+from models_tf_archives.capsule_layer import *
+from models_tf_archives._utils import *
 import logging
 
 class Capsule:

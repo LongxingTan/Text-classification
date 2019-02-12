@@ -4,9 +4,11 @@ from model_params import params
 
 
 class HAN(object):
-    def __init__(self, train):
-        self.train = train
-        self.embedding_layer = Embedding_layer(params['vocab_size'], params['embedding_size'])
+    def __init__(self, training):
+        self.training = training
+        self.embedding_layer = Embedding_layer(vocab_size=params['vocab_size'],
+                                               embed_size=params['embedding_size'],
+                                               embedding_type=params['embedding_type'])
 
     def build(self, inputs):
         with tf.name_scope('embed'):

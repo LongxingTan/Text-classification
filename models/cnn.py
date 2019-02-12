@@ -6,18 +6,20 @@ from model_params import params
 class TextCNN(object):
     def __init__(self,training):
         self.training=training
-        self.embedding_layer=Embedding_layer(params['vocab_size'],params['embedding_size'])
+        self.embedding_layer=Embedding_layer(vocab_size=params['vocab_size'],
+                                             embed_size=params['embedding_size'],
+                                             embedding_type=params['embedding_type'])
 
     def build(self,inputs):
         with tf.name_scope("embed"):
-            embedded_outputs=self.embedding_layer(inputs) #[batch_size,max_sentence_length,embedding_size]
+            embedded_outputs=self.embedding_layer(inputs)
 
         if self.training:
             embedded_outputs=tf.nn.dropout(embedded_outputs,1.0)
 
         conv_output = []
         for i, kernel_size in enumerate(params['kernel_sizes']):
-            with tf.name_scope("conv_maxpool_%s" % kernel_size):
+            with tf.name_scope("conv_%s" % kernel_size):
                 conv1=tf.layers.conv1d(inputs=embedded_outputs,
                                        filters=params['filters'],
                                        kernel_size=[kernel_size],
@@ -34,10 +36,7 @@ class TextCNN(object):
 
         if self.training:
             self.cnn_out=tf.nn.dropout(self.cnn_out,1.0)
-
         self.logits=tf.layers.dense(self.cnn_out,units=params['n_class'])
-
-
 
 
     def __call__(self,inputs,targets=None):

@@ -6,7 +6,6 @@ class TextBert(object):
     def __init__(self,training):
         self.training = training
 
-
     def build(self,inputs):
         bert_config=BertConfig.from_json_file(params['bert_config_file'])
         model = BertModel(bertconfig=bert_config, is_training=self.training, input_ids=inputs)

@@ -44,7 +44,7 @@ class OnlineProcessor(DataProcessor):
         self.labels=set()
 
         if chinese_seg=='char':
-            self.tokenizer=tokenization.FullTokenizer(vocab_file=os.path.join(params['data_dir'],'vocab.txt'))
+            self.tokenizer=tokenization.FullTokenizer()
         elif chinese_seg=='word':
             self.tokenizer=tokenization_test.BasicTokenizer(chinese_seg='word')
 

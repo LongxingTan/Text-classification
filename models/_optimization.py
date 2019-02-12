@@ -110,6 +110,3 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
             param_name=m.group(1)
         return param_name
 
-
-
-
