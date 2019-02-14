@@ -6,7 +6,7 @@ import tensorflow as tf
 import gensim
 
 from model_params import params
-import tokenization,tokenization_test
+import tokenization
 
 # char level or word level,
 # pretrained model, solve the oov

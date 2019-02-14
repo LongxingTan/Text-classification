@@ -3,8 +3,8 @@ from model_params import params
 
 
 class Transformer(object):
-    def __init__(self, train):
-        self.train = train
+    def __init__(self, training):
+        self.training = training
         self.embedding_layer = Embedding_layer(vocab_size=params['vocab_size'],
                                                embed_size=params['embedding_size'],
                                                embedding_type=params['embedding_type'])

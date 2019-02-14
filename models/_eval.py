@@ -1,5 +1,5 @@
 import tensorflow as tf
-from sklearn.metrics import accuracy_score, f1_score,roc_auc_score,precision_score,recall_score
+from sklearn.metrics import accuracy_score, f1_score,precision_score,recall_score,roc_auc_score
 
 
 def metric_fn():
@@ -33,10 +33,10 @@ def create_eval_binary(labels,predictions):
     return eval_metrics
 
 def create_eval_sk(labels,predictions):
+    #micro average is the same for p,r and f1, so use weighted f1 here
     accuracy = accuracy_score(labels,predictions)
-    pre=precision_score(labels,predictions,average='micro')
-    rec=recall_score(labels,predictions,average='micro')
-    micro_f1=f1_score(labels,predictions,average='micro')
-    auc=roc_auc_score(labels,predictions,average='micro')
-    eval_metrics = {'accuracy': accuracy,'precision':pre,'recall':rec,'f1':micro_f1,'auc':auc}
+    pre=precision_score(y_true=labels,y_pred=predictions,average='micro')
+    rec=recall_score(y_true=labels,y_pred=predictions,average='micro')
+    weighted_f1=f1_score(y_true=labels,y_pred=predictions,average='weighted')
+    eval_metrics = {'accuracy': accuracy,'precision':pre,'recall':rec,'weighted_f1':weighted_f1}
     return eval_metrics

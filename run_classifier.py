@@ -23,8 +23,9 @@ logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(messa
                     level = logging.INFO)
 logger = logging.getLogger(__name__)
 
-def prepare_input():
-    online=OnlineProcessor(seq_length=params["seq_length"],chinese_seg=params['chinese_seg'])
+
+def prepare_input(file_based):
+    online=OnlineProcessor(seq_length=params["seq_length"],chinese_seg=params['chinese_seg'],file_based=file_based)
     train_features=online.get_train_examples(data_dir=params['data_dir'])
     dev_features=online.get_dev_axamples(data_dir=params['data_dir'])
     test_features=online.get_test_examples(data_dir=params['data_dir'])
@@ -33,6 +34,7 @@ def prepare_input():
 
 def model_fn_builder(textmodel,init_checkpoint=None):
     def model_fn(features, labels, mode):
+
         inputs, targets = features['input_ids'], features["label_ids"]
         model=textmodel(training=(mode==tf.estimator.ModeKeys.TRAIN))
         logits = model(inputs, targets)
@@ -40,7 +42,14 @@ def model_fn_builder(textmodel,init_checkpoint=None):
 
         loss = create_loss(logits=logits, y_onehot=targets_onehot, loss_type='cross_entropy')
         prediction_label = tf.argmax(logits, -1,output_type=tf.int32)
-        probabilities = tf.nn.softmax(logits, name='softmax_tensor')
+        probabilities = tf.reduce_max(tf.nn.softmax(logits, name='softmax_tensor'),axis=-1)
+        #accuracy= tf.metrics.accuracy(labels=targets, predictions=prediction_label)
+
+        correct_predictions = tf.equal(prediction_label,targets)
+        accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name='accuracy')
+
+        logging_hook = tf.train.LoggingTensorHook({"loss": loss, "accuracy": accuracy}, every_n_iter=10)
+        tf.summary.scalar('accuracy', accuracy)
 
         if init_checkpoint:
             tvars = tf.trainable_variables()
@@ -71,11 +80,10 @@ def model_fn_builder(textmodel,init_checkpoint=None):
 
         else:
             train_op=create_optimizer_basic_adam(loss,learning_rate=params['learning_rate'])
-            eval_metric_ops = create_eval(targets, prediction_label)
             return tf.estimator.EstimatorSpec(mode=mode,
                                               loss=loss,
                                               train_op=train_op,
-                                              eval_metric_ops=eval_metric_ops)
+                                              training_hooks=[logging_hook])
     return model_fn
 
 
@@ -95,8 +103,8 @@ def run_classifier(textmodel,init_checkpoint=None,train_features=None,dev_featur
         eval_input_fn=input_fn_builder(dev_features,labels=None,batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=False)
     else:
         eval_input_fn=file_based_input_fn_builder(input_file=os.path.join(params['data_dir'],'eval.tf_record'),
-                                              params=params,
-                                              is_training=False)
+                                                  params=params,
+                                                  is_training=False)
     result=estimator.evaluate(input_fn=eval_input_fn,steps=eval_steps)
 
     output_eval_file=os.path.join(params['output_dir'], 'eval_result.txt')
@@ -118,20 +126,25 @@ def run_classifier(textmodel,init_checkpoint=None,train_features=None,dev_featur
         for i,prediction in enumerate(result):
             label=prediction['labels']
             probability=prediction['probabilities']
-            output_line=",".join(['text',str(label),str(probability)])+'\n'
+            output_line=",".join([str(label),str(probability)])+'\n'
             writer.write(output_line)
 
 
 if __name__=="__main__":
-    train_features, dev_features, test_features=prepare_input()
+    file_based=False
+
+    if not file_based:
+        train_features, dev_features, test_features=prepare_input(file_based=file_based)
+    else:
+        train_features, dev_features, test_features=None,None,None
 
     #run_classifier(textmodel=TextBert,init_checkpoint=params['bert_init_checkpoint'])
-    run_classifier(textmodel=TextCNN,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
+    #run_classifier(textmodel=TextCNN,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
     #run_classifier(textmodel=Bi_LSTM,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
     #run_classifier(textmodel=GRU_Attention, init_checkpoint=None, train_features=train_features, dev_features=dev_features,test_features=test_features)
     #run_classifier(textmodel=Self_attention, init_checkpoint=None, train_features=train_features, dev_features=dev_features, test_features=test_features)
     #run_classifier(textmodel=RCNN, init_checkpoint=None, train_features=train_features,dev_features=dev_features, test_features=test_features)
-    #run_classifier(textmodel=Capsule, init_checkpoint=None, train_features=train_features,dev_features=dev_features, test_features=test_features)
+    run_classifier(textmodel=Capsule, init_checkpoint=None, train_features=train_features,dev_features=dev_features, test_features=test_features)
 
 
 
@@ -161,10 +174,10 @@ if __name__=="__main__":
                 row.append(1000)
                 label.append(1000)
 
-            row.append(index2label[result[i][1]])
+            row.append(index2label[result[i][0]])
+            row.append(result[i][0])
+            predict.append(result[i][0])
             row.append(result[i][1])
-            predict.append(result[i][1])
-            row.append(result[i][2])
             writer.writerow(row)
 
     eval=create_eval_sk(labels=label,predictions=predict)

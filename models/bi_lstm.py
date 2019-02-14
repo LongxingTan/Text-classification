@@ -19,17 +19,22 @@ class Bi_LSTM(object):
 
         with tf.name_scope('bi_lstm'):
             cell_fw = tf.nn.rnn_cell.LSTMCell(params['lstm_hidden_size'])
-            cell_fw = tf.nn.rnn_cell.DropoutWrapper(cell_fw, output_keep_prob=1.0)
             cell_bw = tf.nn.rnn_cell.LSTMCell(params['lstm_hidden_size'])
-            cell_bw = tf.nn.rnn_cell.DropoutWrapper(cell_bw, output_keep_prob=1.0)
+            if self.training:
+                cell_fw = tf.nn.rnn_cell.DropoutWrapper(cell_fw, output_keep_prob=params['rnn_dropout_keep'])
+                cell_bw = tf.nn.rnn_cell.DropoutWrapper(cell_bw, output_keep_prob=params['rnn_dropout_keep'])
+
             all_outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=cell_fw, cell_bw=cell_bw,
                                                              inputs=embedding_outputs,
                                                              sequence_length=None, dtype=tf.float32)
             all_outputs = tf.concat(all_outputs, 2)
-            self.h_outputs = all_outputs[:, -1, :]
+            h_outputs = all_outputs[:, -1, :]
+
+        if self.training:
+            h_outputs=tf.nn.dropout(h_outputs,params['dropout_keep'])
 
         with tf.name_scope('output'):
-            self.logits = tf.layers.dense(self.h_outputs,units=params['n_class'], name="logits")
+            self.logits = tf.layers.dense(h_outputs,units=params['n_class'], name="logits")
 
     def __call__(self,inputs,targets=None):
         self.build(inputs)

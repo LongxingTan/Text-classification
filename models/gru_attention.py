@@ -15,7 +15,7 @@ class GRU_Attention(object):
             embedding_outputs = self.embedding_layer(inputs)
 
         if self.training:
-            embedding_outputs = tf.nn.dropout(embedding_outputs, 1.0)
+            embedding_outputs = tf.nn.dropout(embedding_outputs, params['embedding_dropout_keep'])
 
         encoder_fw = tf.nn.rnn_cell.GRUCell(params['gru_hidden_size'])
         encoder_bw = tf.nn.rnn_cell.GRUCell(params['gru_hidden_size'])

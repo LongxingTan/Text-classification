@@ -15,7 +15,7 @@ class Self_attention(object):
             embedding_outputs = self.embedding_layer(inputs)
 
         if self.training:
-            embedding_outputs = tf.nn.dropout(embedding_outputs, 1.0)
+            embedding_outputs = tf.nn.dropout(embedding_outputs, params['embedding_dropout_keep'])
 
         with tf.variable_scope('lstm'):
             fw_cell=tf.nn.rnn_cell.BasicLSTMCell(params['lstm_hidden_size'])

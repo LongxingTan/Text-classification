@@ -14,8 +14,8 @@ class HAN(object):
         with tf.name_scope('embed'):
             embedding_outputs = self.embedding_layer(inputs)
 
-        if self.train:
-            embedding_outputs = tf.nn.dropout(embedding_outputs, 1.0)
+        if self.training:
+            embedding_outputs = tf.nn.dropout(embedding_outputs, params['embedding_dropout_keep'])
         pass
 
     def __call__(self, inputs, targets=None):

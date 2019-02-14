@@ -19,7 +19,6 @@ class svm():
         return self.svmmodel
 
 
-
     def evaluate(self,x_test,y_test):
         if os.path.exists('svm.pkl'):
             svmmodel=joblib.load('svm.pkl')
@@ -29,7 +28,7 @@ class svm():
         print('precision score',precision_score(y_test,y_test_predict,average='macro'))
         print('f1 score:',f1_score(y_test,y_test_predict,average='macro'))
         y_test_prob = svmmodel.predict_proba(x_test)
-        y_test_onehot = label_binarize(y_test, np.arange(len(set(y_train))))  # n_classes
+        y_test_onehot = label_binarize(y_test, np.arange(len(set(self.y_train))))  # n_classes
         fpr, tpr, thresholds = roc_curve(y_test_onehot.ravel(), y_test_prob.ravel())
         ax = plt.subplot(2, 1, 1)
         ax.step(fpr, tpr, color='b', alpha=0.2, where='post')
