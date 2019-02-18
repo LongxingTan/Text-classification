@@ -28,10 +28,9 @@ class Capsule(object):
 
         cap_conv=self.capsule_layer_conv(conv1)
         cap_conv_shape=cap_conv.get_shape().as_list()
-        cap_flat=tf.reshape(cap_conv,[cap_conv_shape[0],-1,self.capsule_layer_conv.vec_length])
-        print(cap_flat.get_shape().as_list())
+        #cap_flat shape [batch_size, (seq_length-4)* cap_kernel_size[-1]), vec_length]
+        cap_flat=tf.reshape(cap_conv,[-1,cap_conv_shape[1]*cap_conv_shape[2]*cap_conv_shape[3],self.capsule_layer_conv.vec_length])
         self.logits=self.capsule_layer_dense(cap_flat)
-
 
     def __call__(self, inputs, targets=None):
         self.build(inputs)
@@ -48,22 +47,22 @@ class Capsule_layer(tf.layers.Layer):
         return scale*vector
 
     def dynamic_routing(self,input,iters):
-        print('input shape', input.get_shape().as_list())
-        print('b shape', input.get_shape().as_list()[:-1])
-        b=tf.zeros(shape=input.get_shape().as_list()[:-1], dtype=tf.float32, name='b')
+        # input shape [batch_size,n_class, (seq_length-4)* cap_kernel_size[-1]), vec_length]
+        # output shape [batch_size, n_class, vec_length]
+        b=tf.zeros_like(input[:,:,:,-1], dtype=tf.float32, name='b')
         for i in range(iters):
             c=tf.nn.softmax(b,1)
-            output=self.squash(tf.tensordot(c,input,axes=[2,2]))
+            output=self.squash(tf.einsum('bij,bijk->bik',c,input))
             if i<iters-1:
-                b=b+tf.tensordot(output,input,axes=[2,3])
+                b=b+tf.einsum('bik,bijk->bij',output,input)
         return output
 
     def vec_transform_conv(self,inputs,input_cap_dim,input_cap_num,output_cap_dim,output_cap_num):
+        #output u_hat_vecs shape:[batch_size, hidden_size,(seq_length-4)* cap_kernel_size[-1]),vec_length]
         kernel_size=[1]
         u_hat_vecs=tf.layers.conv1d(inputs=inputs,kernel_size=kernel_size,filters=output_cap_dim*output_cap_num)
         u_hat_vecs=tf.reshape(u_hat_vecs,[-1,input_cap_num,output_cap_num,output_cap_dim])
         u_hat_vecs=tf.transpose(u_hat_vecs,(0,2,1,3))
-        print('u_hat shape',u_hat_vecs.get_shape().as_list())
         return u_hat_vecs
 
 
@@ -74,12 +73,11 @@ class Capsule_layer_conv(Capsule_layer):
         self.vec_length=vec_length
 
     def call(self, inputs, **kwargs):
+        #output cap shape #[batch_size,seq_length-4,1,shape[-1], vec_length]
         cap=tf.layers.conv2d(inputs,filters=self.shape[-1]*self.vec_length,kernel_size=self.shape[:2],strides=1)
-        print('cap1 shape',cap.get_shape().as_list()) #[batch_size,seq_length-4,1,256]
         cap_shape=cap.get_shape().as_list()
-        cap=tf.reshape(cap,cap_shape[0:2]+[-1,self.vec_length])
+        cap=tf.reshape(cap,[-1,cap_shape[1],cap_shape[2],self.shape[-1],self.vec_length])
         cap=self.squash(cap)
-        print('cap2 shape', cap.get_shape().as_list())
         return cap
 
 class Capsule_layer_dense(Capsule_layer):
@@ -91,8 +89,7 @@ class Capsule_layer_dense(Capsule_layer):
         inputs_shape=inputs.get_shape().as_list()
         cap=self.vec_transform_conv(inputs,input_cap_dim=inputs_shape[-1],input_cap_num=inputs_shape[1],
                                     output_cap_dim=inputs_shape[-1],output_cap_num=self.hidden_size)
-        output=self.dynamic_routing(cap,iters=3)
-        print('out shape',output.get_shape().as_list())
-        output=tf.sqrt(tf.reduce_sum(tf.square(output),axis=2))
-        print('output shape2', output.get_shape().as_list())
-        return output
+        outputs=self.dynamic_routing(cap,iters=3)
+        #outputs shape [batch_size, n_class]
+        outputs=tf.sqrt(tf.reduce_sum(tf.square(outputs),axis=2))
+        return outputs
