@@ -1,26 +1,27 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-from model_params import params
 
 
 class RCNN(object):
-    def __init__(self, training):
+    def __init__(self, training,params):
         self.training = training
+        self.params=params
         self.embedding_layer = Embedding_layer(vocab_size=params['vocab_size'],
                                                embed_size=params['embedding_size'],
-                                               embedding_type=params['embedding_type'])
+                                               embedding_type=params['embedding_type'],
+                                               params=params)
 
     def build(self, inputs):
         with tf.name_scope('embed'):
             embedding_outputs = self.embedding_layer(inputs)
 
         if self.training:
-            embedding_outputs = tf.nn.dropout(embedding_outputs, params['embedding_dropout_keep'])
+            embedding_outputs = tf.nn.dropout(embedding_outputs, self.params['embedding_dropout_keep'])
 
         with tf.variable_scope('bi-rnn'):
-            fw_cell=tf.nn.rnn_cell.LSTMCell(params['lstm_hidden_size'])
+            fw_cell=tf.nn.rnn_cell.LSTMCell(self.params['lstm_hidden_size'])
             fw_cell=tf.nn.rnn_cell.DropoutWrapper(fw_cell,output_keep_prob=1.0)
-            bw_cell=tf.nn.rnn_cell.LSTMCell(params['lstm_hidden_size'])
+            bw_cell=tf.nn.rnn_cell.LSTMCell(self.params['lstm_hidden_size'])
             bw_cell=tf.nn.rnn_cell.DropoutWrapper(bw_cell,output_keep_prob=1.0)
             (outputs_fw,outputs_bw),_=tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_cell,
                                                                       cell_bw=bw_cell,
@@ -35,18 +36,18 @@ class RCNN(object):
 
         with tf.name_scope("word-representation"):
             self.x = tf.concat([self.c_left, embedding_outputs, self.c_right], axis=2, name="x")
-            embedding_size = 2 * params['lstm_hidden_size'] +params['embedding_size']
+            embedding_size = 2 * self.params['lstm_hidden_size'] +self.params['embedding_size']
 
         with tf.name_scope("text-representation"):
-            W2 = tf.Variable(tf.random_uniform([embedding_size, params['dense_hidden_size']], -1.0, 1.0), name="W2")
-            b2 = tf.Variable(tf.constant(0.1, shape=[params['dense_hidden_size']]), name="b2")
+            W2 = tf.Variable(tf.random_uniform([embedding_size, self.params['dense_hidden_size']], -1.0, 1.0), name="W2")
+            b2 = tf.Variable(tf.constant(0.1, shape=[self.params['dense_hidden_size']]), name="b2")
             self.y2 = tf.einsum('aij,jk->aik', self.x, W2) + b2
 
         with tf.name_scope("max-pooling"):
             y3 = tf.reduce_max(self.y2, axis=1)
 
         with tf.variable_scope('output'):
-            self.logits=tf.layers.dense(y3,units=params['n_class'])
+            self.logits=tf.layers.dense(y3,units=self.params['n_class'])
 
     def __call__(self, inputs, targets=None):
         self.build(inputs)

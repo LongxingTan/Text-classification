@@ -1,24 +1,25 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-from model_params import params
 
 
 class GRU_Attention(object):
-    def __init__(self, training):
+    def __init__(self, training,params):
         self.training = training
+        self.params=params
         self.embedding_layer = Embedding_layer(vocab_size=params['vocab_size'],
                                                embed_size=params['embedding_size'],
-                                               embedding_type=params['embedding_type'])
+                                               embedding_type=params['embedding_type'],
+                                               params=params)
 
     def build(self, inputs):
         with tf.name_scope('embed'):
             embedding_outputs = self.embedding_layer(inputs)
 
         if self.training:
-            embedding_outputs = tf.nn.dropout(embedding_outputs, params['embedding_dropout_keep'])
+            embedding_outputs = tf.nn.dropout(embedding_outputs, self.params['embedding_dropout_keep'])
 
-        encoder_fw = tf.nn.rnn_cell.GRUCell(params['gru_hidden_size'])
-        encoder_bw = tf.nn.rnn_cell.GRUCell(params['gru_hidden_size'])
+        encoder_fw = tf.nn.rnn_cell.GRUCell(self.params['gru_hidden_size'])
+        encoder_bw = tf.nn.rnn_cell.GRUCell(self.params['gru_hidden_size'])
         encoder_fw = tf.nn.rnn_cell.DropoutWrapper(encoder_fw, input_keep_prob=0.9)
         encoder_bw = tf.nn.rnn_cell.DropoutWrapper(encoder_bw, input_keep_prob=0.9)
 
@@ -32,10 +33,10 @@ class GRU_Attention(object):
         with tf.variable_scope('attention') as scope:
             self._atn_in = tf.expand_dims(self.encoder_output, axis=2)
             self.atn_w = tf.Variable(
-                tf.truncated_normal(shape=[1, 1, 2 * params['gru_hidden_size'], params['attention_hidden_size']],
+                tf.truncated_normal(shape=[1, 1, 2 * self.params['gru_hidden_size'], self.params['attention_hidden_size']],
                                     stddev=0.1), name='atn_w')
-            self.atn_b = tf.Variable(tf.zeros(shape=[params['attention_hidden_size']]))
-            self.atn_v = tf.Variable(tf.truncated_normal(shape=[1, 1, params['attention_hidden_size'], 1], stddev=0.1),
+            self.atn_b = tf.Variable(tf.zeros(shape=[self.params['attention_hidden_size']]))
+            self.atn_v = tf.Variable(tf.truncated_normal(shape=[1, 1, self.params['attention_hidden_size'], 1], stddev=0.1),
                                      name='atn_v')
             self.atn_activation = tf.nn.tanh(
                 tf.nn.conv2d(self._atn_in, self.atn_w, strides=[1, 1, 1, 1], padding='SAME') + self.atn_b)
@@ -45,7 +46,7 @@ class GRU_Attention(object):
             self.attention_output = tf.squeeze(_atn_out, [1], name='atn_out')
 
         with tf.variable_scope('output'):
-            self.logits=tf.layers.dense(self.attention_output,units=params['n_class'])
+            self.logits=tf.layers.dense(self.attention_output,units=self.params['n_class'])
 
 
     def __call__(self, inputs, targets=None):

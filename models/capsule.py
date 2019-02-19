@@ -1,26 +1,28 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-from model_params import params
 
 
 class Capsule(object):
-    def __init__(self, training):
+    def __init__(self, training,params):
         self.training = training
-        self.embedding_layer = Embedding_layer(params['vocab_size'], params['embedding_size'],
-                                               embedding_type=params['embedding_type'])
-        self.capsule_layer_conv=Capsule_layer_conv(shape=[3,1,128,16],vec_length=16)
+        self.params=params
+        self.embedding_layer = Embedding_layer(vocab_size=params['vocab_size'],
+                                               embed_size=params['embedding_size'],
+                                               embedding_type=params['embedding_type'],
+                                               params=params)
+        self.capsule_layer_conv=Capsule_layer_conv(shape=[3,1,32,8],vec_length=16)
         self.capsule_layer_dense=Capsule_layer_dense(hidden_size=params['n_class'])
 
     def build(self, inputs):
         with tf.name_scope('embed'):
             embedding_outputs = self.embedding_layer(inputs)
         if self.training:
-            embedding_outputs = tf.nn.dropout(embedding_outputs, params['embedding_dropout_keep'])
+            embedding_outputs = tf.nn.dropout(embedding_outputs, self.params['embedding_dropout_keep'])
 
         embedding_outputs=tf.expand_dims(embedding_outputs,-1)
         with tf.name_scope('conv'):
             conv1 = tf.layers.conv2d(inputs=embedding_outputs,
-                                     filters=params['filters'],
+                                     filters=self.params['filters'],
                                      kernel_size=[3,300],
                                      strides=1,
                                      padding='valid',

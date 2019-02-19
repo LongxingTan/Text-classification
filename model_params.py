@@ -1,15 +1,16 @@
 from collections import defaultdict
+import json
 
 params=defaultdict(
+    file_based=True,
     batch_size=128,
     num_train_epochs=10,
-    learning_rate=10e-3,
+    learning_rate=10e-4,
     learning_rate_warmup_steps=500,
     optimizer_adam_beta1=0.1,
     optimizer_adam_beta2=0.1,
     optimizer_adam_epsilon=10e-6,
 
-    seq_length=50, #adjust and sentence
     vocab_size=None,
     n_class=None,
     model_dir='./outputs',
@@ -18,13 +19,15 @@ params=defaultdict(
     log_dir='./log',
 
     #embedding
-    chinese_seg='word',  # word ,char, mix
+    chinese_seg='char',  # word ,char, mix
+    seq_length=100, #adjust also according to chinese_seg
+
     embedding_size=300,
-    embedding_type='word2vec_static', # random, word2vec_static,word2vec_finetune,fasttext_static,fasttext_finetune,multi_channel
+    embedding_type='random', # random, word2vec_static,word2vec_finetune,fasttext_static,fasttext_finetune,multi_channel
     embedding_dropout_keep=0.95,
 
     #CNN
-    kernel_sizes=[3,7,15],
+    kernel_sizes=[3,5,10],
     filters=128,
 
     # RNN model parameters
@@ -55,5 +58,24 @@ params=defaultdict(
 )
 
 
+class Config(object):
+    def __init__(self):
+        self.params=defaultdict()
+
+    def from_json_file(self,json_file):
+        with open(json_file, 'r') as f:
+            self.params = json.load(f)
+
+    def to_json_string(self,json_file,params):
+        with open(json_file, 'w') as f:
+            json.dump(params, f)
+
+config=Config()
+
+if __name__=='__main__':
+
+    #config.to_json_string('./config.json',params)
+    config.from_json_file('./config.json')
+    print(config.params)
 
 

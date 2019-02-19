@@ -2,7 +2,7 @@ import os
 import csv
 import logging
 import tensorflow as tf
-from model_params import params
+from model_params import params,config
 from models.bert import TextBert,get_assignment_map_from_checkpoint
 from models.bi_lstm import Bi_LSTM
 from models.cnn import TextCNN
@@ -24,19 +24,10 @@ logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(messa
 logger = logging.getLogger(__name__)
 
 
-def prepare_input(file_based):
-    online=OnlineProcessor(seq_length=params["seq_length"],chinese_seg=params['chinese_seg'],file_based=file_based)
-    train_features=online.get_train_examples(data_dir=params['data_dir'])
-    dev_features=online.get_dev_axamples(data_dir=params['data_dir'])
-    test_features=online.get_test_examples(data_dir=params['data_dir'])
-    return train_features,dev_features,test_features
-
-
-def model_fn_builder(textmodel,init_checkpoint=None):
+def model_fn_builder(textmodel,params,init_checkpoint=None):
     def model_fn(features, labels, mode):
-
         inputs, targets = features['input_ids'], features["label_ids"]
-        model=textmodel(training=(mode==tf.estimator.ModeKeys.TRAIN))
+        model=textmodel(training=(mode==tf.estimator.ModeKeys.TRAIN),params=params)
         logits = model(inputs, targets)
         targets_onehot = tf.one_hot(targets, depth=params['n_class'],dtype=tf.float32)
 
@@ -48,7 +39,7 @@ def model_fn_builder(textmodel,init_checkpoint=None):
         correct_predictions = tf.equal(prediction_label,targets)
         accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name='accuracy')
 
-        logging_hook = tf.train.LoggingTensorHook({"loss": loss, "accuracy": accuracy}, every_n_iter=10)
+        logging_hook = tf.train.LoggingTensorHook({"loss": loss, "accuracy": accuracy}, every_n_iter=100)
         tf.summary.scalar('accuracy', accuracy)
 
         if init_checkpoint:
@@ -87,24 +78,29 @@ def model_fn_builder(textmodel,init_checkpoint=None):
     return model_fn
 
 
-def run_classifier(textmodel,init_checkpoint=None,train_features=None,dev_features=None,test_features=None):
-    model_fn=model_fn_builder(textmodel,init_checkpoint=init_checkpoint)
+def run_classifier(textmodel,params,input_class=None,init_checkpoint=None):
+    model_fn=model_fn_builder(textmodel,params=params,init_checkpoint=init_checkpoint)
     estimator= tf.estimator.Estimator(model_fn=model_fn, model_dir=params["model_dir"])
 
-    num_train_steps=int(params['len_train_examples']/params['batch_size']*params['num_train_epochs'])
-    if train_features:
-        train_input_fn=input_fn_builder(train_features,labels=None,batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=True)
+    if not params['file_based']:
+        train_input_fn=input_fn_builder(features=input_class.get_train_examples(data_dir=params['data_dir']),labels=None,
+                                        batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=True)
     else:
+        #input_class.get_train_examples(data_dir=params['data_dir']) #delete
         train_input_fn=file_based_input_fn_builder(input_file=os.path.join(params["data_dir"],"train.tf_record"), params=params,is_training=True)
+    num_train_steps = int(params['len_train_examples'] / params['batch_size'] * params['num_train_epochs'])
     estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
 
-    eval_steps=int(params['len_dev_examples']//params['batch_size'])
-    if dev_features:
-        eval_input_fn=input_fn_builder(dev_features,labels=None,batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=False)
+
+    if not params['file_based']:
+        eval_input_fn=input_fn_builder(features=input_class.get_dev_examples(data_dir=params['data_dir']),labels=None,
+                                       batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=False)
     else:
+        #input_class.get_dev_examples(data_dir=params['data_dir']) #delete
         eval_input_fn=file_based_input_fn_builder(input_file=os.path.join(params['data_dir'],'eval.tf_record'),
                                                   params=params,
                                                   is_training=False)
+    eval_steps = int(params['len_dev_examples'] // params['batch_size'])
     result=estimator.evaluate(input_fn=eval_input_fn,steps=eval_steps)
 
     output_eval_file=os.path.join(params['output_dir'], 'eval_result.txt')
@@ -113,9 +109,11 @@ def run_classifier(textmodel,init_checkpoint=None,train_features=None,dev_featur
             tf.logging.info(" %s = %s",key,str(result[key]))
             writer.write(" %s = %s\n"%(key,str(result[key])))
 
-    if test_features:
-        predict_input_fn=input_fn_builder(test_features,labels=None,batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=False)
+    if not params['file_based']:
+        predict_input_fn=input_fn_builder(features=input_class.get_test_examples(data_dir=params['data_dir']),labels=None,
+                                          batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=False)
     else:
+        #input_class.get_test_examples(data_dir=params['data_dir']) #delete
         predict_input_fn=file_based_input_fn_builder(input_file=os.path.join(params['data_dir'],'test.tf_record'),
                                                  params=params,
                                                  is_training=False)
@@ -131,21 +129,21 @@ def run_classifier(textmodel,init_checkpoint=None,train_features=None,dev_featur
 
 
 if __name__=="__main__":
-    file_based=False
+    config.from_json_file('./config.json')
+    params=config.params
 
-    if not file_based:
-        train_features, dev_features, test_features=prepare_input(file_based=file_based)
-    else:
-        train_features, dev_features, test_features=None,None,None
+    online = OnlineProcessor(params=params, seq_length=params["seq_length"], chinese_seg=params['chinese_seg'],
+                             file_based=params['file_based'])
 
-    #run_classifier(textmodel=TextBert,init_checkpoint=params['bert_init_checkpoint'])
-    #run_classifier(textmodel=TextCNN,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
-    #run_classifier(textmodel=Bi_LSTM,init_checkpoint=None,train_features=train_features,dev_features=dev_features,test_features=test_features)
-    #run_classifier(textmodel=GRU_Attention, init_checkpoint=None, train_features=train_features, dev_features=dev_features,test_features=test_features)
-    #run_classifier(textmodel=Self_attention, init_checkpoint=None, train_features=train_features, dev_features=dev_features, test_features=test_features)
-    #run_classifier(textmodel=RCNN, init_checkpoint=None, train_features=train_features,dev_features=dev_features, test_features=test_features)
-    run_classifier(textmodel=Capsule, init_checkpoint=None, train_features=train_features,dev_features=dev_features, test_features=test_features)
+    #run_classifier(textmodel=TextBert,params=params,input_class=online,init_checkpoint=params['bert_init_checkpoint'])
+    #run_classifier(textmodel=TextCNN,params=params,input_class=online,init_checkpoint=None)
+    #run_classifier(textmodel=Bi_LSTM,params=params,input_class=online,init_checkpoint=None)
+    #run_classifier(textmodel=GRU_Attention,params=params,input_class=online, init_checkpoint=None)
+    #run_classifier(textmodel=Self_attention,params=params,input_class=online, init_checkpoint=None)
+    #run_classifier(textmodel=RCNN,params=params,input_class=online, init_checkpoint=None)
+    run_classifier(textmodel=Capsule,params=params,input_class=online, init_checkpoint=None)
 
+    #config.to_json_string('./config.json', params)
 
 
     label,predict=[],[]

@@ -5,7 +5,6 @@ import numpy as np
 import tensorflow as tf
 import gensim
 
-from model_params import params
 import tokenization
 
 # char level or word level,
@@ -13,11 +12,12 @@ import tokenization
 # vocab choose, filter the low or high frequency
 
 class Embedding_layer():
-    def __init__(self,vocab_size,embed_size,embedding_type='random',vocab=None):
+    def __init__(self,vocab_size,embed_size,params,embedding_type='random',vocab=None):
         self.vocab_size=vocab_size
         self.embed_size=embed_size
         self.embedding_type=embedding_type
         self.vocab=vocab
+        self.params=params
 
     def create_embedding_table(self,embedding_type):
         if embedding_type=='random':
@@ -25,11 +25,11 @@ class Embedding_layer():
             return embedding_table
 
         elif re.search('word2vec',embedding_type) is not None:
-            embedding_file=params['word2vec_file'] ##https://github.com/Embedding/Chinese-Word-Vectors
+            embedding_file=self.params['word2vec_file'] ##https://github.com/Embedding/Chinese-Word-Vectors
             embedding_vocab=gensim.models.KeyedVectors.load_word2vec_format(embedding_file,binary=True,
                                                                             encoding='utf-8',unicode_errors='ignore')
             embedding_table=np.zeros((self.vocab_size,self.embed_size))
-            self.vocab,index_vocab=tokenization.load_vocab(vocab_file=os.path.join(params['data_dir'],'vocab_word.txt'))
+            self.vocab,index_vocab=tokenization.load_vocab(vocab_file=os.path.join(self.params['data_dir'],'vocab_word.txt'))
             #Todo print OOV rate
             for word,i in self.vocab.items():
                 if word in embedding_vocab.vocab:
@@ -48,9 +48,9 @@ class Embedding_layer():
 
         elif re.search('fasttext',embedding_type) is not None:
             #https://fasttext.cc/docs/en/crawl-vectors.html
-            embedding_vocab=self._load_fast_text(embedding_file=params['fasttext_file'])
+            embedding_vocab=self._load_fast_text(embedding_file=self.params['fasttext_file'])
             embedding_table = np.zeros((self.vocab_size, self.embed_size))
-            self.vocab, index_vocab = tokenization.load_vocab(vocab_file=os.path.join(params['data_dir'], 'vocab_word.txt'))
+            self.vocab, index_vocab = tokenization.load_vocab(vocab_file=os.path.join(self.params['data_dir'], 'vocab_word.txt'))
             # Todo print OOV rate
             for word, i in self.vocab.items():
                 if word in embedding_vocab.items():
@@ -73,7 +73,7 @@ class Embedding_layer():
             pass
 
         else:
-            print('Invalid embedding type: %s'%params['embedding_type'])
+            print('Invalid embedding type: %s'%self.params['embedding_type'])
             print('elmo please refer to github repository: HIT-SCIR/ELMoForManyLangs')
 
 

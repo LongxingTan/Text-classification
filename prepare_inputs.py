@@ -1,9 +1,10 @@
 import os
 import csv
+import copy
 import tensorflow as tf
 import collections
 import tokenization
-from model_params import params
+
 
 class InputExample:
     def __init__(self,guid,text_a,text_b=None,label=None):
@@ -38,21 +39,22 @@ class DataProcessor:
 
 
 class OnlineProcessor(DataProcessor):
-    def __init__(self,seq_length,chinese_seg,file_based=False):
-        self.seq_length = seq_length
+    def __init__(self,params,seq_length,chinese_seg,file_based=False):
+        self.seq_length = params['seq_length']
+        self.file_based = params['file_based']
+        self.params=params #pass parameters by reference in python
         self.labels=set()
-        self.file_based=file_based
 
-        if chinese_seg=='char':
-            self.tokenizer=tokenization.BasicTokenizer(chinese_seg='char')
-        elif chinese_seg=='word':
-            self.tokenizer=tokenization.BasicTokenizer(chinese_seg='word')
+        if params['chinese_seg']=='char':
+            self.tokenizer=tokenization.BasicTokenizer(chinese_seg='char',params=params)
+        elif params['chinese_seg']=='word':
+            self.tokenizer=tokenization.BasicTokenizer(chinese_seg='word',params=params)
 
     def get_train_examples(self,data_dir):
         self.examples=self._create_examples(self._read_csv(os.path.join(data_dir,'train.csv')),'train')
-        params['len_train_examples'] = len(self.examples)
+        self.params['len_train_examples'] = len(self.examples)
         label_list=self.get_labels()
-        params.update(n_class=len(label_list))
+        self.params.update(n_class=len(label_list))
 
         self.label_map = {}
         for i, label in enumerate(label_list):
@@ -63,19 +65,21 @@ class OnlineProcessor(DataProcessor):
                 f.write("%s,%s\n" % (key, self.label_map[key]))
 
         if self.file_based:
-            self._file_based_convert_examples_to_features(self.examples,self.get_labels(),self.seq_length,self.tokenizer,output_file=os.path.join(data_dir,'train.tf_record'))
+            self._file_based_convert_examples_to_features(self.examples,self.get_labels(),self.seq_length,self.tokenizer,
+                                                          output_file=os.path.join(data_dir,'train.tf_record'))
 
         else:
             train_features=self.convert_examples_to_features(self.examples,self.seq_length,self.tokenizer)
             return train_features
 
 
-    def get_dev_axamples(self,data_dir):
+    def get_dev_examples(self,data_dir):
         dev=self._create_examples(self._read_csv(os.path.join(data_dir,'dev.csv')),'dev')
-        params['len_dev_examples'] = len(dev)
+        self.params['len_dev_examples'] = len(dev)
 
         if self.file_based:
-            self._file_based_convert_examples_to_features(dev,self.get_labels(),self.seq_length,self.tokenizer, output_file=os.path.join(data_dir,'eval.tf_record'))
+            self._file_based_convert_examples_to_features(dev,self.get_labels(),self.seq_length,self.tokenizer,
+                                                          output_file=os.path.join(data_dir,'eval.tf_record'))
         else:
             dev_features=self.convert_examples_to_features(dev,self.seq_length,self.tokenizer)
             return dev_features
@@ -83,10 +87,11 @@ class OnlineProcessor(DataProcessor):
 
     def get_test_examples(self,data_dir):
         test=self._create_examples(self._read_csv(os.path.join(data_dir, 'test.csv')), 'test')
-        params['len_test_examples'] = len(test)
+        self.params['len_test_examples'] = len(test)
 
         if self.file_based:
-            self._file_based_convert_examples_to_features(test,self.get_labels(),self.seq_length,self.tokenizer, output_file=os.path.join(data_dir,'test.tf_record'))
+            self._file_based_convert_examples_to_features(test,self.get_labels(),self.seq_length,self.tokenizer,
+                                                          output_file=os.path.join(data_dir,'test.tf_record'))
         else:
             test_features = self.convert_examples_to_features(test, self.seq_length, self.tokenizer)
             return test_features
@@ -122,7 +127,7 @@ class OnlineProcessor(DataProcessor):
             tokens.append(token)
         tokens.append("[SEP]")
 
-        input_ids=tokenizer.convert_tokens_to_ids(vocab_file=os.path.join(params['data_dir'],'vocab_word.txt'),tokens=tokens)
+        input_ids=tokenizer.convert_tokens_to_ids(vocab_file=os.path.join(self.params['data_dir'],'vocab_word.txt'),tokens=tokens)
         while len(input_ids)<seq_length:
             input_ids.append(0)
         assert len(input_ids)==seq_length
@@ -132,8 +137,7 @@ class OnlineProcessor(DataProcessor):
         else:
             label_id=0 #Todo
         feature=InputFeatures(input_ids=input_ids,label_id=label_id)
-        #print(tokens)
-        #print(input_ids)
+        #print('ids',example.label,'tokens',tokens)
         return feature
 
     def convert_examples_to_features(self,examples,seq_length,tokenizer):
@@ -177,7 +181,6 @@ def file_based_input_fn_builder(input_file,is_training,params):
 
     def _decode_record(record,name_to_features):
         example=tf.parse_single_example(record,name_to_features)
-
         for name in list(example.keys()):
             t=example[name]
             if t.dtype==tf.int64:
@@ -206,7 +209,6 @@ def input_fn_builder(features,labels,batch_size,seq_length,is_training):
     return input_fn
 
 
-#test
 if __name__=="__main__":
-    online = OnlineProcessor(seq_length=params["seq_length"])
-    train = online.get_train_examples(data_dir=params['data_dir'])
+    online = OnlineProcessor()
+    train = online.get_train_examples()

@@ -4,7 +4,6 @@ import jieba
 #import thulac
 #from nltk.tokenize.stanford_segmenter import StanfordSegmenter
 #import HanLP
-from model_params import params
 import collections
 
 
@@ -17,7 +16,7 @@ def convert_to_unicode(text):
         raise ValueError("unsupported text string type: %s" % (type(text)))
 
 
-def create_vocab(chinese_seg):
+def create_vocab(chinese_seg,params):
     from prepare_inputs import OnlineProcessor
     vocab = set()
     vocab.update(['[PAD]','[SEP]','[CLS]','[unused1]','[unused2]','[unused3]','[unused4]','[unused5]','[unused6]'])
@@ -26,7 +25,7 @@ def create_vocab(chinese_seg):
         for word in vocab:
             f.write('%s\n'% word)
 
-    tokenizer = BasicTokenizer(chinese_seg='word')
+    tokenizer = BasicTokenizer(chinese_seg='word',params=params)
     online = OnlineProcessor(seq_length=params["seq_length"],chinese_seg=chinese_seg)
     online.get_train_examples(data_dir=params['data_dir'])
 
@@ -41,7 +40,7 @@ def create_vocab(chinese_seg):
 
 
 
-def load_vocab(vocab_file):
+def load_vocab(vocab_file,params):
     vocab=collections.OrderedDict()
     index_vocab=collections.OrderedDict()
     index=0
@@ -72,9 +71,10 @@ def convert_tokens_to_ids(vocab, tokens):
 
 
 class BasicTokenizer(object):
-    def __init__(self,chinese_seg='word',do_lower_case=True):
+    def __init__(self,params,chinese_seg='word',do_lower_case=True):
         self.do_lower_case=do_lower_case
         self.chinese_seg=chinese_seg
+        self.params=params
 
     def tokenize(self,text):
         text=convert_to_unicode(text)
@@ -97,7 +97,7 @@ class BasicTokenizer(object):
         return output_tokens
 
     def convert_tokens_to_ids(self,vocab_file,tokens):
-        vocab, index_vocab = load_vocab(vocab_file)
+        vocab, index_vocab = load_vocab(vocab_file,params=self.params)
         return convert_tokens_to_ids(vocab,tokens)
 
     def _clean_text(self,text):
