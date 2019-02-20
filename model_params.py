@@ -4,8 +4,8 @@ import json
 params=defaultdict(
     file_based=True,
     batch_size=128,
-    num_train_epochs=10,
-    learning_rate=10e-4,
+    num_train_epochs=1,
+    learning_rate=10e-4,#5e-5
     learning_rate_warmup_steps=500,
     optimizer_adam_beta1=0.1,
     optimizer_adam_beta2=0.1,
@@ -54,7 +54,7 @@ params=defaultdict(
 
     #
     dense_hidden_size=512,
-    dropout_keep=0.7,
+    dropout_keep=0.95,
 )
 
 

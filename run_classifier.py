@@ -13,16 +13,16 @@ from models.c_lstm import C_LSTM
 from models.rcnn import RCNN
 from prepare_inputs import OnlineProcessor,file_based_input_fn_builder,input_fn_builder
 from models._loss import create_loss
-from models._optimization import create_optimizer_basic_adam
+from models._optimization import create_optimizer_basic_adam,create_optimizer_warmup_adam
 from models._eval import create_eval,create_eval_sk
+from tokenization import create_vocab
 
-
+new_data=True
 # without logging configuration, tensorflow won't print the training information
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 def model_fn_builder(textmodel,params,init_checkpoint=None):
     def model_fn(features, labels, mode):
@@ -41,6 +41,7 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
 
         logging_hook = tf.train.LoggingTensorHook({"loss": loss, "accuracy": accuracy}, every_n_iter=100)
         tf.summary.scalar('accuracy', accuracy)
+        #tf.summary.image(...)
 
         if init_checkpoint:
             tvars = tf.trainable_variables()
@@ -71,6 +72,8 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
 
         else:
             train_op=create_optimizer_basic_adam(loss,learning_rate=params['learning_rate'])
+            #num_train_steps = int(params['len_train_examples'] / params['batch_size'] * params['num_train_epochs'])
+            #train_op=create_optimizer_warmup_adam(loss,init_learning_rate=params['learning_rate'],num_train_steps=num_train_steps,num_warmup_steps=int(0.15*num_train_steps))
             return tf.estimator.EstimatorSpec(mode=mode,
                                               loss=loss,
                                               train_op=train_op,
@@ -78,25 +81,23 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
     return model_fn
 
 
-def run_classifier(textmodel,params,input_class=None,init_checkpoint=None):
+def run_classifier(textmodel,params,data_process_class=None,init_checkpoint=None):
     model_fn=model_fn_builder(textmodel,params=params,init_checkpoint=init_checkpoint)
     estimator= tf.estimator.Estimator(model_fn=model_fn, model_dir=params["model_dir"])
 
     if not params['file_based']:
-        train_input_fn=input_fn_builder(features=input_class.get_train_examples(data_dir=params['data_dir']),labels=None,
+        train_input_fn=input_fn_builder(features=data_process_class.get_train_examples(data_dir=params['data_dir']),labels=None,
                                         batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=True)
     else:
-        #input_class.get_train_examples(data_dir=params['data_dir']) #delete
         train_input_fn=file_based_input_fn_builder(input_file=os.path.join(params["data_dir"],"train.tf_record"), params=params,is_training=True)
     num_train_steps = int(params['len_train_examples'] / params['batch_size'] * params['num_train_epochs'])
     estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
 
 
     if not params['file_based']:
-        eval_input_fn=input_fn_builder(features=input_class.get_dev_examples(data_dir=params['data_dir']),labels=None,
+        eval_input_fn=input_fn_builder(features=data_process_class.get_dev_examples(data_dir=params['data_dir']),labels=None,
                                        batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=False)
     else:
-        #input_class.get_dev_examples(data_dir=params['data_dir']) #delete
         eval_input_fn=file_based_input_fn_builder(input_file=os.path.join(params['data_dir'],'eval.tf_record'),
                                                   params=params,
                                                   is_training=False)
@@ -110,10 +111,10 @@ def run_classifier(textmodel,params,input_class=None,init_checkpoint=None):
             writer.write(" %s = %s\n"%(key,str(result[key])))
 
     if not params['file_based']:
-        predict_input_fn=input_fn_builder(features=input_class.get_test_examples(data_dir=params['data_dir']),labels=None,
+        predict_input_fn=input_fn_builder(features=data_process_class.get_test_examples(data_dir=params['data_dir']),labels=None,
                                           batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=False)
     else:
-        #input_class.get_test_examples(data_dir=params['data_dir']) #delete
+
         predict_input_fn=file_based_input_fn_builder(input_file=os.path.join(params['data_dir'],'test.tf_record'),
                                                  params=params,
                                                  is_training=False)
@@ -129,22 +130,33 @@ def run_classifier(textmodel,params,input_class=None,init_checkpoint=None):
 
 
 if __name__=="__main__":
-    config.from_json_file('./config.json')
-    params=config.params
+    if not new_data:
+        config.from_json_file('./config.json')
+        params = config.params
+    elif params['chinese_seg']=='word':
+        create_vocab(params)
+    else: pass
 
-    online = OnlineProcessor(params=params, seq_length=params["seq_length"], chinese_seg=params['chinese_seg'],
-                             file_based=params['file_based'])
+    online = OnlineProcessor(params=params, seq_length=params["seq_length"], chinese_seg=params['chinese_seg'])
+    if not(new_data) and os.path.exists(os.path.join(params['data_dir'],'train.tf_record')):
+        tf.logging.info("Train, eval and predict according to the tf_record data")
+    else:
+        online.get_train_examples(data_dir=params['data_dir'],generate_file=True) #delete
+        online.get_dev_examples(data_dir=params['data_dir'], generate_file=True)  # delete
+        online.get_test_examples(data_dir=params['data_dir'],generate_file=True) #delete
+
+
 
     #run_classifier(textmodel=TextBert,params=params,input_class=online,init_checkpoint=params['bert_init_checkpoint'])
-    #run_classifier(textmodel=TextCNN,params=params,input_class=online,init_checkpoint=None)
+    run_classifier(textmodel=TextCNN,params=params,data_process_class=online,init_checkpoint=None)
     #run_classifier(textmodel=Bi_LSTM,params=params,input_class=online,init_checkpoint=None)
     #run_classifier(textmodel=GRU_Attention,params=params,input_class=online, init_checkpoint=None)
     #run_classifier(textmodel=Self_attention,params=params,input_class=online, init_checkpoint=None)
     #run_classifier(textmodel=RCNN,params=params,input_class=online, init_checkpoint=None)
-    run_classifier(textmodel=Capsule,params=params,input_class=online, init_checkpoint=None)
+    #run_classifier(textmodel=Capsule,params=params,input_class=online, init_checkpoint=None)
 
-    #config.to_json_string('./config.json', params)
-
+    if new_data:
+        config.to_json_string('./config.json', params)
 
     label,predict=[],[]
     index2label, label2index = {}, {}

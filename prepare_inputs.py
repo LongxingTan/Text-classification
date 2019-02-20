@@ -39,18 +39,14 @@ class DataProcessor:
 
 
 class OnlineProcessor(DataProcessor):
-    def __init__(self,params,seq_length,chinese_seg,file_based=False):
+    def __init__(self,params,seq_length,chinese_seg):
         self.seq_length = params['seq_length']
-        self.file_based = params['file_based']
         self.params=params #pass parameters by reference in python
         self.labels=set()
+        self.tokenizer = tokenization.BasicTokenizer(chinese_seg=params['chinese_seg'], params=params)
 
-        if params['chinese_seg']=='char':
-            self.tokenizer=tokenization.BasicTokenizer(chinese_seg='char',params=params)
-        elif params['chinese_seg']=='word':
-            self.tokenizer=tokenization.BasicTokenizer(chinese_seg='word',params=params)
 
-    def get_train_examples(self,data_dir):
+    def get_train_examples(self,data_dir,generate_file=False):
         self.examples=self._create_examples(self._read_csv(os.path.join(data_dir,'train.csv')),'train')
         self.params['len_train_examples'] = len(self.examples)
         label_list=self.get_labels()
@@ -64,7 +60,7 @@ class OnlineProcessor(DataProcessor):
             for key in self.label_map.keys():
                 f.write("%s,%s\n" % (key, self.label_map[key]))
 
-        if self.file_based:
+        if generate_file:
             self._file_based_convert_examples_to_features(self.examples,self.get_labels(),self.seq_length,self.tokenizer,
                                                           output_file=os.path.join(data_dir,'train.tf_record'))
 
@@ -73,11 +69,11 @@ class OnlineProcessor(DataProcessor):
             return train_features
 
 
-    def get_dev_examples(self,data_dir):
+    def get_dev_examples(self,data_dir,generate_file=False):
         dev=self._create_examples(self._read_csv(os.path.join(data_dir,'dev.csv')),'dev')
         self.params['len_dev_examples'] = len(dev)
 
-        if self.file_based:
+        if generate_file:
             self._file_based_convert_examples_to_features(dev,self.get_labels(),self.seq_length,self.tokenizer,
                                                           output_file=os.path.join(data_dir,'eval.tf_record'))
         else:
@@ -85,11 +81,11 @@ class OnlineProcessor(DataProcessor):
             return dev_features
 
 
-    def get_test_examples(self,data_dir):
+    def get_test_examples(self,data_dir,generate_file=False):
         test=self._create_examples(self._read_csv(os.path.join(data_dir, 'test.csv')), 'test')
         self.params['len_test_examples'] = len(test)
 
-        if self.file_based:
+        if generate_file:
             self._file_based_convert_examples_to_features(test,self.get_labels(),self.seq_length,self.tokenizer,
                                                           output_file=os.path.join(data_dir,'test.tf_record'))
         else:

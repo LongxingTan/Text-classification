@@ -5,6 +5,7 @@ import jieba
 #from nltk.tokenize.stanford_segmenter import StanfordSegmenter
 #import HanLP
 import collections
+import logging
 
 
 def convert_to_unicode(text):
@@ -16,7 +17,7 @@ def convert_to_unicode(text):
         raise ValueError("unsupported text string type: %s" % (type(text)))
 
 
-def create_vocab(chinese_seg,params):
+def create_vocab(params):
     from prepare_inputs import OnlineProcessor
     vocab = set()
     vocab.update(['[PAD]','[SEP]','[CLS]','[unused1]','[unused2]','[unused3]','[unused4]','[unused5]','[unused6]'])
@@ -25,8 +26,9 @@ def create_vocab(chinese_seg,params):
         for word in vocab:
             f.write('%s\n'% word)
 
+    logging.info('Word vocab generating ...')
     tokenizer = BasicTokenizer(chinese_seg='word',params=params)
-    online = OnlineProcessor(seq_length=params["seq_length"],chinese_seg=chinese_seg)
+    online = OnlineProcessor(params=params, seq_length=params["seq_length"], chinese_seg=params['chinese_seg'])
     online.get_train_examples(data_dir=params['data_dir'])
 
     for example in online.examples:
@@ -67,6 +69,8 @@ def convert_tokens_to_ids(vocab, tokens):
     for token in tokens:
         if token in vocab.keys():
             ids.append(vocab[token])
+        else:
+            ids.append(vocab['[unused1]'])
     return ids
 
 
