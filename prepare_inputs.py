@@ -1,6 +1,5 @@
 import os
 import csv
-import copy
 import tensorflow as tf
 import collections
 import tokenization
@@ -14,18 +13,15 @@ class InputExample:
         self.label=label
 
 class InputFeatures:
-    def __init__(self,input_ids,label_id):
+    def __init__(self,input_ids,label_ids):
         self.input_ids=input_ids
-        self.label_id=label_id
+        self.label_ids=label_ids
 
 class DataProcessor:
     def get_train_examples(self,data_dir):
         raise NotImplementedError()
 
     def get_dev_examples(self,data_dir):
-        raise NotImplementedError()
-
-    def get_labels(self):
         raise NotImplementedError()
 
     @classmethod
@@ -39,33 +35,34 @@ class DataProcessor:
 
 
 class OnlineProcessor(DataProcessor):
-    def __init__(self,params,seq_length,chinese_seg):
+    def __init__(self,params,seq_length,chinese_seg,generate_label_map=False):
         self.seq_length = params['seq_length']
         self.params=params #pass parameters by reference in python
-        self.labels=set()
         self.tokenizer = tokenization.BasicTokenizer(chinese_seg=params['chinese_seg'], params=params)
+        self.generate_label_map=generate_label_map
+        if generate_label_map:
+            self.labels = set()
+            self.label_map = {}
+        else:
+            _,self.label_map=self.load_label_dict()
 
 
     def get_train_examples(self,data_dir,generate_file=False):
-        self.examples=self._create_examples(self._read_csv(os.path.join(data_dir,'train.csv')),'train')
-        self.params['len_train_examples'] = len(self.examples)
-        label_list=self.get_labels()
-        self.params.update(n_class=len(label_list))
+        train=self._create_examples(self._read_csv(os.path.join(data_dir,'train.csv')),'train')
+        self.params['len_train_examples'] = len(train)
+        self.params.update(n_class=len(self.get_labels()))
 
-        self.label_map = {}
-        for i, label in enumerate(label_list):
-            self.label_map[label] = i
-
-        with open('label_dict.csv', 'w') as f:
-            for key in self.label_map.keys():
-                f.write("%s,%s\n" % (key, self.label_map[key]))
+        if self.generate_label_map:
+            for i, label in enumerate(self.get_labels()):
+                self.label_map[label] = i
+            self.label_map['NA']=len(self.get_labels())
 
         if generate_file:
-            self._file_based_convert_examples_to_features(self.examples,self.get_labels(),self.seq_length,self.tokenizer,
+            self._file_based_convert_examples_to_features(train,self.seq_length,self.tokenizer,
                                                           output_file=os.path.join(data_dir,'train.tf_record'))
 
         else:
-            train_features=self.convert_examples_to_features(self.examples,self.seq_length,self.tokenizer)
+            train_features=self._convert_examples_to_features(train,self.seq_length,self.tokenizer)
             return train_features
 
 
@@ -74,10 +71,10 @@ class OnlineProcessor(DataProcessor):
         self.params['len_dev_examples'] = len(dev)
 
         if generate_file:
-            self._file_based_convert_examples_to_features(dev,self.get_labels(),self.seq_length,self.tokenizer,
+            self._file_based_convert_examples_to_features(dev,self.seq_length,self.tokenizer,
                                                           output_file=os.path.join(data_dir,'eval.tf_record'))
         else:
-            dev_features=self.convert_examples_to_features(dev,self.seq_length,self.tokenizer)
+            dev_features=self._convert_examples_to_features(dev,self.seq_length,self.tokenizer)
             return dev_features
 
 
@@ -86,10 +83,10 @@ class OnlineProcessor(DataProcessor):
         self.params['len_test_examples'] = len(test)
 
         if generate_file:
-            self._file_based_convert_examples_to_features(test,self.get_labels(),self.seq_length,self.tokenizer,
+            self._file_based_convert_examples_to_features(test,self.seq_length,self.tokenizer,
                                                           output_file=os.path.join(data_dir,'test.tf_record'))
         else:
-            test_features = self.convert_examples_to_features(test, self.seq_length, self.tokenizer)
+            test_features = self._convert_examples_to_features(test, self.seq_length, self.tokenizer)
             return test_features
 
     def get_labels(self):
@@ -102,11 +99,11 @@ class OnlineProcessor(DataProcessor):
             text_a=tokenization.convert_to_unicode(line[0])
 
             if set_type=='test':
-                label='0'
+                label='NA'
             else:
                 label=tokenization.convert_to_unicode(line[-1])
 
-            if set_type=='train':
+            if set_type=='train' and self.generate_label_map:
                 self.labels.add(label)
             examples.append(InputExample(guid=guid,text_a=text_a,text_b=None,label=label))
         return examples
@@ -123,7 +120,7 @@ class OnlineProcessor(DataProcessor):
             tokens.append(token)
         tokens.append("[SEP]")
 
-        input_ids=tokenizer.convert_tokens_to_ids(vocab_file=os.path.join(self.params['data_dir'],'vocab_word.txt'),tokens=tokens)
+        input_ids=tokenizer.convert_tokens_to_ids(tokens=tokens)
         while len(input_ids)<seq_length:
             input_ids.append(0)
         assert len(input_ids)==seq_length
@@ -131,35 +128,43 @@ class OnlineProcessor(DataProcessor):
         if example.label in self.label_map.keys():
             label_id=self.label_map[example.label]
         else:
-            label_id=0 #Todo
-        feature=InputFeatures(input_ids=input_ids,label_id=label_id)
+            label_id=self.label_map['NA']
+        feature=InputFeatures(input_ids=input_ids,label_ids=label_id)
         #print('ids',example.label,'tokens',tokens)
         return feature
 
-    def convert_examples_to_features(self,examples,seq_length,tokenizer):
+    def _convert_examples_to_features(self,examples,seq_length,tokenizer):
         features=[]
         for i,example in enumerate(examples):
             if i%10000==0:
-                tf.logging.info("process exmaples %d of %d" %(i,len(examples)))
+                tf.logging.info("process examples %d of %d" %(i,len(examples)))
             feature=self._convert_single_example(example,seq_length,tokenizer)
             features.append(feature)
         return features
 
 
-    def _file_based_convert_examples_to_features(self,examples,label_list,seq_length,tokenizer,output_file):
+    def _file_based_convert_examples_to_features(self,examples,seq_length,tokenizer,output_file):
         writer=tf.python_io.TFRecordWriter(output_file)
-        for ex_index,example in enumerate(examples):
-            if ex_index%10000==0:
-                tf.logging.info("writing exmaples %d of %d" %(ex_index,len(examples)))
+        for i,example in enumerate(examples):
+            if i%10000==0:
+                tf.logging.info("writing examples %d of %d" %(i,len(examples)))
             feature=self._convert_single_example(example,seq_length,tokenizer)
 
             features=collections.OrderedDict()
             features['input_ids']=tf.train.Feature(int64_list=tf.train.Int64List(value=list(feature.input_ids)))
-            features['label_ids']=tf.train.Feature(int64_list=tf.train.Int64List(value=list([feature.label_id])))
+            features['label_ids']=tf.train.Feature(int64_list=tf.train.Int64List(value=list([feature.label_ids])))
 
             tf_example=tf.train.Example(features=tf.train.Features(feature=features))
             writer.write(tf_example.SerializeToString())
         writer.close()
+
+    def load_label_dict(self):
+        index2label, label2index = {}, {}
+        reader = csv.reader(open('./data/label_dict.csv', 'r'))
+        for row in reader:
+            index2label.update({int(row[1]): row[0]})
+            label2index.update({row[0]: int(row[1])})
+        return index2label,label2index
 
 
 def file_based_input_fn_builder(input_file,is_training,params):
@@ -185,7 +190,7 @@ def file_based_input_fn_builder(input_file,is_training,params):
         return example
     return input_fn
 
-def input_fn_builder(features,labels,batch_size,seq_length,is_training):
+def input_fn_builder(features,batch_size,seq_length,is_training):
     input_ids=[]
     label_ids=[]
     for feature in features:

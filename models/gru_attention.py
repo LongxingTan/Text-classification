@@ -20,15 +20,15 @@ class GRU_Attention(object):
 
         encoder_fw = tf.nn.rnn_cell.GRUCell(self.params['gru_hidden_size'])
         encoder_bw = tf.nn.rnn_cell.GRUCell(self.params['gru_hidden_size'])
-        encoder_fw = tf.nn.rnn_cell.DropoutWrapper(encoder_fw, input_keep_prob=0.9)
-        encoder_bw = tf.nn.rnn_cell.DropoutWrapper(encoder_bw, input_keep_prob=0.9)
+        encoder_fw = tf.nn.rnn_cell.DropoutWrapper(encoder_fw, input_keep_prob=self.params['rnn_dropout_keep'])
+        encoder_bw = tf.nn.rnn_cell.DropoutWrapper(encoder_bw, input_keep_prob=self.params['rnn_dropout_keep'])
 
         with tf.variable_scope('bi_gru') as scope:
             gru_outputs, gru_states = tf.nn.bidirectional_dynamic_rnn(cell_fw=encoder_fw, cell_bw=encoder_bw,
                                                                       inputs=embedding_outputs,
                                                                       dtype=tf.float32)
             self.encoder_output = tf.concat(gru_outputs, 2)
-            self.encoder_state = tf.concat(gru_states, 1)
+            self.encoder_state = tf.concat(gru_states, 1) #
 
         with tf.variable_scope('attention') as scope:
             self._atn_in = tf.expand_dims(self.encoder_output, axis=2)

@@ -72,7 +72,8 @@ class Embedding_layer():
         elif re.search('glove',embedding_type) is not None:
             pass
 
-        else:
+
+        elif re.search('elmo', embedding_type) is not None:
             print('Invalid embedding type: %s'%self.params['embedding_type'])
             print('elmo please refer to github repository: HIT-SCIR/ELMoForManyLangs')
 

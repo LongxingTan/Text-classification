@@ -16,3 +16,9 @@ def create_loss(logits,y_onehot,loss_type):
             tf.maximum(0., y_pred - 0.1))
         loss = tf.reduce_mean(losses)
         return loss
+
+    elif loss_type=='contrastive_loss':
+        margin=1
+        losses=y_true*tf.square(y_pred)+(1-y_true)*tf.square(tf.maximum(margin-y_pred,0))
+        loss=tf.reduce_mean(losses)
+        return loss

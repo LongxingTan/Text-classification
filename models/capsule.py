@@ -5,12 +5,12 @@ from models._embedding import Embedding_layer
 class Capsule(object):
     def __init__(self, training,params):
         self.training = training
-        self.params=params
+        self.params = params
         self.embedding_layer = Embedding_layer(vocab_size=params['vocab_size'],
                                                embed_size=params['embedding_size'],
                                                embedding_type=params['embedding_type'],
                                                params=params)
-        self.capsule_layer_conv=Capsule_layer_conv(shape=[3,1,32,8],vec_length=16)
+        self.capsule_layer_conv=Capsule_layer_conv(shape=[3,1,64,8],vec_length=8)
         self.capsule_layer_dense=Capsule_layer_dense(hidden_size=params['n_class'])
 
     def build(self, inputs):

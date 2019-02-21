@@ -6,7 +6,7 @@ import jieba
 #import HanLP
 import collections
 import logging
-
+import os
 
 def convert_to_unicode(text):
     if isinstance(text, str):
@@ -17,26 +17,38 @@ def convert_to_unicode(text):
         raise ValueError("unsupported text string type: %s" % (type(text)))
 
 
-def create_vocab(params):
+def create_vocab_and_label(params):
     from prepare_inputs import OnlineProcessor
     vocab = set()
     vocab.update(['[PAD]','[SEP]','[CLS]','[unused1]','[unused2]','[unused3]','[unused4]','[unused5]','[unused6]'])
 
+    '''
     with open('./data/vocab_word.txt','w',encoding='utf-8') as f:
         for word in vocab:
             f.write('%s\n'% word)
+    '''
 
-    logging.info('Word vocab generating ...')
-    tokenizer = BasicTokenizer(chinese_seg='word',params=params)
-    online = OnlineProcessor(params=params, seq_length=params["seq_length"], chinese_seg=params['chinese_seg'])
+    logging.info('Vocab generating ...')
+
+    online = OnlineProcessor(params=params, seq_length=params["seq_length"], chinese_seg=params['chinese_seg'],generate_label_map=True)
     online.get_train_examples(data_dir=params['data_dir'])
 
-    for example in online.examples:
-        vocab.update(tokenizer.tokenize(example.text_a))
+    if params['chinese_seg']=='word':
+        tokenizer = BasicTokenizer(chinese_seg='word', params=params)
+        for example in online.examples:
+            vocab.update(tokenizer.tokenize(example.text_a))
 
-    with open('./data/vocab_word.txt','w',encoding='utf-8') as f:
-        for word in vocab:
-            f.write('%s\n'% word)
+        with open('./data/vocab_word.txt', 'w', encoding='utf-8') as f:
+            for word in vocab:
+                f.write('%s\n' % word)
+        f.close()
+    else:
+        print("Bert already provide a chinese char list, so will not generate new")
+
+
+    with open('./data/label_dict.csv', 'w') as f:
+        for key in online.label_map.keys():
+            f.write("%s,%s\n" % (key, online.label_map[key]))
     f.close()
 
 
@@ -62,7 +74,7 @@ def load_vocab(vocab_file,params):
         params.update(vocab_size=len(vocab))
     return vocab,index_vocab
 
-
+'''
 def convert_tokens_to_ids(vocab, tokens):
     """Converts a sequence of tokens into ids using the vocab."""
     ids = []
@@ -73,12 +85,19 @@ def convert_tokens_to_ids(vocab, tokens):
             ids.append(vocab['[unused1]'])
     return ids
 
-
+'''
 class BasicTokenizer(object):
     def __init__(self,params,chinese_seg='word',do_lower_case=True):
         self.do_lower_case=do_lower_case
-        self.chinese_seg=chinese_seg
+        self.chinese_seg=params['chinese_seg']
         self.params=params
+        if self.chinese_seg=='char':
+            self.vocab, self.index_vocab = load_vocab(vocab_file=os.path.join(self.params['data_dir'],'vocab.txt'),
+                                                      params=self.params)
+        elif self.chinese_seg=='word':
+            self.vocab, self.index_vocab = load_vocab(vocab_file=os.path.join(self.params['data_dir'],'vocab_word.txt'),
+                                                      params=self.params)
+
 
     def tokenize(self,text):
         text=convert_to_unicode(text)
@@ -87,7 +106,7 @@ class BasicTokenizer(object):
         if self.chinese_seg=="char":
             text=self._tokenize_chinese_chars(text)
         elif self.chinese_seg=="word":
-            text=self._token_chinese_words(text)
+            text=self._tokenize_chinese_words(text)
 
         orig_tokens=self._whitespace_tokenize(text)
         split_tokens=[]
@@ -100,9 +119,15 @@ class BasicTokenizer(object):
         output_tokens=self._whitespace_tokenize(" ".join(split_tokens))
         return output_tokens
 
-    def convert_tokens_to_ids(self,vocab_file,tokens):
-        vocab, index_vocab = load_vocab(vocab_file,params=self.params)
-        return convert_tokens_to_ids(vocab,tokens)
+    def convert_tokens_to_ids(self,tokens):
+        ids = []
+        for token in tokens:
+            if token in self.vocab.keys():
+                ids.append(self.vocab[token])
+            else:
+                ids.append(self.vocab['[unused1]'])
+        return ids
+
 
     def _clean_text(self,text):
         output=[]
@@ -128,7 +153,7 @@ class BasicTokenizer(object):
                 output.append(char)
         return "".join(output)
 
-    def _token_chinese_words(self,text):
+    def _tokenize_chinese_words(self,text):
         jieba.load_userdict('./data/user_dict.txt')
         wordlist = jieba.lcut(text,HMM=False)
         #self.vocab.update([i for i in ])
@@ -169,7 +194,6 @@ class BasicTokenizer(object):
                 output[-1].append(char)
             i+=1
         return ["".join(x) for x in output]
-
 
 
     def _is_control(self,char):
@@ -253,4 +277,3 @@ if __name__=="__main__":
     tokenizer=BasicTokenizer(chinese_seg='word')
     words=tokenizer.tokenize("2014-01-06 客户于露女士三个工作日外第五次投诉：针对其反映的C 260车辆，因车辆在行驶中及冷车启动时出现异响问题送修至北京保利星徽。经销商对车辆检测后告知需要更换助力泵。客户非常不满意，质疑产品质量。另外反映车辆还存在异味问题。客户对此不能接受，要求厂家回复一事，至今没有工作人员与其联系。客户再次致电表示希望由厂家给予解答，助力泵是不是两年或三年就会坏的，还是质量就有问题，客户希望得到专业的解答，其次客户希望由北京奔驰给予合理的解决方案，同时客户还表示投诉反馈的等待时间太长，不能接受，服务水平问题。现在客户非常着急，催促厂家的工作人员核实情况后尽快给予回复解决")
     print(words)
-    create_vocab('word')

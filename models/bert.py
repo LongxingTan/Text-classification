@@ -11,9 +11,9 @@ class TextBert(object):
         model = BertModel(bertconfig=bert_config, is_training=self.training, input_ids=inputs)
         output_layer = model.get_pooled_output()
 
-        with tf.name_scope('loss'):
+        with tf.name_scope('output'):
             if self.training:
-                output_layer = tf.nn.dropout(output_layer, keep_prob=0.9)
+                output_layer = tf.nn.dropout(output_layer, keep_prob=self.params['dropout_keep'])
             self.logits = tf.layers.dense(output_layer, units=self.params['n_class'])
 
 

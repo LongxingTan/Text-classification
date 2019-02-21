@@ -1,5 +1,5 @@
 .gitignore
-/.idea/
+/.idea/*
 /__pycache__/*
 /data_raw/*
 /data/*
@@ -10,3 +10,4 @@
 *.csv
 test.py
 test2.py
+config.py
