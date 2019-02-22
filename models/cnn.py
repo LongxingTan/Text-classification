@@ -36,11 +36,10 @@ class TextCNN(object):
 
         self.cnn_output_concat=tf.concat(conv_output,2) #[batch_size,1,params['filters']*len(params['kernel_sizes'])
         self.cnn_out=tf.squeeze(self.cnn_output_concat,axis=1)
+        self.cnn_out = self.bn_layer(self.cnn_out)
 
         if self.training:
             self.cnn_out=tf.nn.dropout(self.cnn_out,self.params['dropout_keep'])
-
-        self.cnn_out=self.bn_layer(self.cnn_out)
         self.logits=tf.layers.dense(self.cnn_out,units=self.params['n_class'])
 
 

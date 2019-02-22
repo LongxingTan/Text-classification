@@ -35,7 +35,7 @@ def create_vocab_and_label(params):
 
     if params['chinese_seg']=='word':
         tokenizer = BasicTokenizer(chinese_seg='word', params=params)
-        for example in online.examples:
+        for example in online.train:
             vocab.update(tokenizer.tokenize(example.text_a))
 
         with open('./data/vocab_word.txt', 'w', encoding='utf-8') as f:
@@ -43,7 +43,7 @@ def create_vocab_and_label(params):
                 f.write('%s\n' % word)
         f.close()
     else:
-        print("Bert already provide a chinese char list, so will not generate new")
+        logging.warning("Bert already provide a chinese char list, so will not generate new")
 
 
     with open('./data/label_dict.csv', 'w') as f:
@@ -87,9 +87,9 @@ def convert_tokens_to_ids(vocab, tokens):
 
 '''
 class BasicTokenizer(object):
-    def __init__(self,params,chinese_seg='word',do_lower_case=True):
+    def __init__(self,params,chinese_seg,do_lower_case=True):
         self.do_lower_case=do_lower_case
-        self.chinese_seg=params['chinese_seg']
+        self.chinese_seg=chinese_seg
         self.params=params
         if self.chinese_seg=='char':
             self.vocab, self.index_vocab = load_vocab(vocab_file=os.path.join(self.params['data_dir'],'vocab.txt'),

@@ -5,6 +5,7 @@ import tensorflow as tf
 from model_params import params,config
 from models.bert import TextBert,get_assignment_map_from_checkpoint
 from models.bi_lstm import Bi_LSTM
+from models.lstm import LSTM
 from models.cnn import TextCNN
 from models.self_attention import Self_attention
 from models.gru_attention import GRU_Attention
@@ -16,6 +17,12 @@ from models._loss import create_loss
 from models._optimization import create_optimizer_basic_adam,create_optimizer_warmup_adam
 from models._eval import create_eval,create_eval_sk
 from tokenization import create_vocab_and_label
+#tf.logging.set_verbosity(tf.logging.INFO)
+# without logging configuration, tensorflow won't print the training information
+logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt = '%m/%d/%Y %H:%M:%S',
+                    level = logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 new_data=False  # if it's new data for model
@@ -24,19 +31,14 @@ if not new_data:
     config.from_json_file('./config.json')
     params = config.params
     if os.path.exists(os.path.join(params['data_dir'],'train.tf_record')):
-        tf.logging.info("Run from the existing 'train.tf_record', the config will refer to config.json")
-    else: tf.logging.info("Please double check, you want to run new data, with existing train.tf_record?")
+        tf.logging.debug("Run from the existing 'train.tf_record', the config will refer to config.json")
+    else: tf.logging.debug("Please double check, you want to run new data, with existing train.tf_record?")
 
 else:
     # new data for model
-    tf.logging.info('Run with new data, generate the tf_record/vocab/label, config will refer to the model_params.py')
+    tf.logging.debug('Run with new data, generate the tf_record/vocab/label, config will refer to the model_params.py')
     create_vocab_and_label(params)
 
-# without logging configuration, tensorflow won't print the training information
-logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                    datefmt = '%m/%d/%Y %H:%M:%S',
-                    level = logging.INFO)
-logger = logging.getLogger(__name__)
 
 def model_fn_builder(textmodel,params,init_checkpoint=None):
     def model_fn(features, labels, mode):
@@ -51,8 +53,7 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
         #accuracy= tf.metrics.accuracy(labels=targets, predictions=prediction_label)
 
         correct_predictions = tf.equal(prediction_label,targets)
-        accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name='accuracy')
-
+        accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32), name='accuracy')
         logging_hook = tf.train.LoggingTensorHook({"loss": loss, "accuracy": accuracy}, every_n_iter=100)
         tf.summary.scalar('accuracy', accuracy)
         #tf.summary.image(...)
@@ -85,9 +86,9 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
                                               eval_metric_ops=eval_metric_ops)
 
         else:
-            train_op=create_optimizer_basic_adam(loss,learning_rate=params['learning_rate'])
-            #num_train_steps = int(params['len_train_examples'] / params['batch_size'] * params['num_train_epochs'])
-            #train_op=create_optimizer_warmup_adam(loss,init_learning_rate=params['learning_rate'],num_train_steps=num_train_steps,num_warmup_steps=int(0.15*num_train_steps))
+            #train_op=create_optimizer_basic_adam(loss,learning_rate=params['learning_rate'])
+            num_train_steps = int(params['len_train_examples'] / params['batch_size'] * params['num_train_epochs'])
+            train_op=create_optimizer_warmup_adam(loss,init_learning_rate=params['learning_rate'],num_train_steps=num_train_steps,num_warmup_steps=int(0.15*num_train_steps))
             return tf.estimator.EstimatorSpec(mode=mode,
                                               loss=loss,
                                               train_op=train_op,
@@ -153,12 +154,12 @@ if __name__=="__main__":
 
     #run_classifier(textmodel=TextBert,params=params,data_process_class=online,init_checkpoint=params['bert_init_checkpoint'])
     #run_classifier(textmodel=TextCNN,params=params,data_process_class=online)
-    run_classifier(textmodel=Bi_LSTM,params=params,data_process_class=online)
+    #run_classifier(textmodel=Bi_LSTM,params=params,data_process_class=online)
     #run_classifier(textmodel=GRU_Attention,params=params,data_process_class=online)
     #run_classifier(textmodel=Self_attention,params=params,data_process_class=online)
     #run_classifier(textmodel=RCNN,params=params,data_process_class=online)
     #run_classifier(textmodel=C_LSTM, params=params, data_process_class=online)
-    #run_classifier(textmodel=Capsule,params=params,data_process_class=online)
+    run_classifier(textmodel=Capsule,params=params,data_process_class=online)
 
 
     label, predict = [], []
@@ -184,7 +185,7 @@ if __name__=="__main__":
 
             row.append(index2label[int(result[i][0])])
             row.append(result[i][0])
-            predict.append(result[i][0])
+            predict.append(int(result[i][0]))
             row.append(result[i][1])
             writer.writerow(row)
 

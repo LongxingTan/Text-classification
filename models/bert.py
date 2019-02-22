@@ -9,7 +9,7 @@ class TextBert(object):
     def build(self,inputs):
         bert_config=BertConfig.from_json_file(self.params['bert_config_file'])
         model = BertModel(bertconfig=bert_config, is_training=self.training, input_ids=inputs)
-        output_layer = model.get_pooled_output()
+        output_layer = model.get_pooled_output() #[None, 768]
 
         with tf.name_scope('output'):
             if self.training:

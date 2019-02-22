@@ -4,7 +4,6 @@ import bz2,gzip
 import numpy as np
 import tensorflow as tf
 import gensim
-
 import tokenization
 
 # char level or word level,

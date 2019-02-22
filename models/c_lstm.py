@@ -1,6 +1,6 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-
+from models._layer_normalization import BatchNormalization,LayerNormalization
 
 class C_LSTM(object):
     def __init__(self, training,params):
@@ -10,6 +10,7 @@ class C_LSTM(object):
                                                embed_size=params['embedding_size'],
                                                embedding_type=params['embedding_type'],
                                                params=params)
+        self.bn_layer = BatchNormalization()
 
     def build(self, inputs):
         with tf.name_scope("embed"):
@@ -40,12 +41,12 @@ class C_LSTM(object):
                                                              inputs=cnn_output_concat,
                                                              sequence_length=None, dtype=tf.float32)
             all_outputs = tf.concat(all_outputs, 2)
-            h_outputs = all_outputs[:, -1, :]
+            rnn_outputs = tf.reduce_max(all_outputs, axis=1)
 
         if self.training:
-            h_outputs=tf.nn.dropout(h_outputs,self.params['dropout_keep'])
+            rnn_outputs=tf.nn.dropout(rnn_outputs,self.params['dropout_keep'])
         with tf.name_scope('output'):
-            self.logits = tf.layers.dense(h_outputs,units=self.params['n_class'], name="logits")
+            self.logits = tf.layers.dense(rnn_outputs,units=self.params['n_class'], name="logits")
 
 
 

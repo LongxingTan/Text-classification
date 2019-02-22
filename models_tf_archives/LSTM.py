@@ -10,7 +10,7 @@ class Config():
         self.embedding_matrix=False   #False or true
         self.embedding_type='word2vec'
         self.sentence_length=50
-        self.tfidf=True
+        self.tfidf=False
         self.chi_k=400
 
         self.lstm_hidden_size=300
@@ -80,7 +80,7 @@ class biLSTM():
             all_outputs,_=tf.nn.bidirectional_dynamic_rnn(cell_fw=cell_fw,cell_bw=cell_bw,inputs=self.embedding_chars,
                                             sequence_length=None,dtype=tf.float32)
             all_outputs=tf.concat(all_outputs,2)
-            self.h_outputs=all_outputs[:,-1,:]
+            self.h_outputs=all_outputs[:,-1,:] #? need double check if correct or not here
             #self.h_outputs=self.last_relevant(all_outputs,sentence_length)
 
         with tf.name_scope('output'):

@@ -6,7 +6,7 @@ def create_loss(logits,y_onehot,loss_type):
         pass
 
     elif loss_type == 'cross_entropy':
-        losses = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y_onehot)
+        losses = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=y_onehot)
         loss = tf.reduce_mean(losses)
         return loss
 

@@ -1,6 +1,6 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-
+from models._layer_normalization import BatchNormalization,LayerNormalization
 
 class Self_attention(object):
     def __init__(self, training,params):
@@ -23,8 +23,8 @@ class Self_attention(object):
             bw_cell=tf.nn.rnn_cell.BasicLSTMCell(self.params['lstm_hidden_size'])
             fw_cell_drop=tf.nn.rnn_cell.DropoutWrapper(fw_cell,input_keep_prob=self.params['rnn_dropout_keep'])
             bw_cell_drop=tf.nn.rnn_cell.DropoutWrapper(bw_cell,input_keep_prob=self.params['rnn_dropout_keep'])
-            lstm_out,_=tf.nn.bidirectional_dynamic_rnn(fw_cell_drop,bw_cell_drop,inputs=embedding_outputs,dtype=tf.float32)
-            lstm_encoder=tf.concat([lstm_out[0],lstm_out[1]],axis=2)  #shape [Batch_size,sentences_len,2*lstm_hidden_size]
+            lstm_outs,_=tf.nn.bidirectional_dynamic_rnn(fw_cell_drop,bw_cell_drop,inputs=embedding_outputs,dtype=tf.float32)
+            lstm_encoder=tf.concat(lstm_outs,axis=2)  #shape [Batch_size,sentences_len,2*lstm_hidden_size]
 
         with tf.variable_scope('attention'):
             attention_w1=tf.Variable(tf.random_normal((2*self.params['lstm_hidden_size'],self.params['attention_hidden_size']),stddev=0.1))

@@ -36,33 +36,33 @@ class DataProcessor:
 
 class OnlineProcessor(DataProcessor):
     def __init__(self,params,seq_length,chinese_seg,generate_label_map=False):
-        self.seq_length = params['seq_length']
+        self.seq_length = seq_length
         self.params=params #pass parameters by reference in python
-        self.tokenizer = tokenization.BasicTokenizer(chinese_seg=params['chinese_seg'], params=params)
+        self.tokenizer = tokenization.BasicTokenizer(chinese_seg=chinese_seg, params=params)
         self.generate_label_map=generate_label_map
         if generate_label_map:
-            self.labels = set()
+            self.labels=set()
             self.label_map = {}
         else:
             _,self.label_map=self.load_label_dict()
 
 
     def get_train_examples(self,data_dir,generate_file=False):
-        train=self._create_examples(self._read_csv(os.path.join(data_dir,'train.csv')),'train')
-        self.params['len_train_examples'] = len(train)
-        self.params.update(n_class=len(self.get_labels()))
+        self.train=self._create_examples(self._read_csv(os.path.join(data_dir,'train.csv')),'train')
+        self.params['len_train_examples'] = len(self.train)
 
         if self.generate_label_map:
             for i, label in enumerate(self.get_labels()):
                 self.label_map[label] = i
             self.label_map['NA']=len(self.get_labels())
+            self.params.update(n_class=len(self.get_labels()))
 
         if generate_file:
-            self._file_based_convert_examples_to_features(train,self.seq_length,self.tokenizer,
+            self._file_based_convert_examples_to_features(self.train,self.seq_length,self.tokenizer,
                                                           output_file=os.path.join(data_dir,'train.tf_record'))
 
         else:
-            train_features=self._convert_examples_to_features(train,self.seq_length,self.tokenizer)
+            train_features=self._convert_examples_to_features(self.train,self.seq_length,self.tokenizer)
             return train_features
 
 
@@ -110,7 +110,13 @@ class OnlineProcessor(DataProcessor):
 
 
     def _convert_single_example(self,example,seq_length,tokenizer):
-        tokens_a=tokenizer.tokenize(example.text_a)
+        tokens_a=tokenizer.tokenize(example.text_a) #Todo: optimiza here if you want char and word concat input
+        if self.params['chinese_seg']=='mixed':
+            tokenizer_word= tokenization.BasicTokenizer(chinese_seg='word', params=self.params)
+            tokenizer_char=tokenization.BasicTokenizer(chinese_seg='char', params=self.params)
+            tokens_a_word = tokenizer_word.tokenize(example.text_a)
+            tokens_a_char=tokenizer_char.tokenize(example.text_a)
+
         if len(tokens_a)>seq_length-2:
             tokens_a=tokens_a[0:(seq_length-2)]
 

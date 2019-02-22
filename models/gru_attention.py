@@ -1,6 +1,6 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-
+from models._layer_normalization import BatchNormalization,LayerNormalization
 
 class GRU_Attention(object):
     def __init__(self, training,params):
@@ -52,4 +52,3 @@ class GRU_Attention(object):
     def __call__(self, inputs, targets=None):
         self.build(inputs)
         return self.logits
-

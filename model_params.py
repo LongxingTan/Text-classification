@@ -3,9 +3,9 @@ import json
 
 params=defaultdict(
     file_based=True,
-    batch_size=32,
+    batch_size=64,
     num_train_epochs=3,
-    learning_rate=10e-4,#5e-5
+    learning_rate=1e-4,#5e-5
     learning_rate_warmup_steps=500,
 
     vocab_size=None,
@@ -17,7 +17,7 @@ params=defaultdict(
 
     #embedding
     chinese_seg='char',  # word ,char, mix
-    seq_length=200, #adjust also according to chinese_seg
+    seq_length=140, #adjust also according to chinese_seg
 
     embedding_size=300,
     embedding_type='random', # random, word2vec_static,word2vec_finetune,fasttext_static,fasttext_finetune,multi_channel
@@ -50,7 +50,7 @@ params=defaultdict(
     penalization=False,
 
     #
-    dense_hidden_size=512,
+    dense_hidden_size=1024,
     dropout_keep=0.95,
 )
 
