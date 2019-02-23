@@ -1,10 +1,9 @@
 # Text_classification.
 ---
 ## Overview
-Multi-class Text classification of Chinese text. The common models are implemented by sklearn, tensorflow or keras:
-- Word level representation: chi-square+tfidf, word2vec, glove, fasttext or the concated one
-- Char level representation: elmo, bert
-- Feature representation: CNN, BiLSTM, GRU+Attention, Capsule, HAN, Self-attention, SVM, XGBoost
+The repository implements the common algorithms for multi-class text classification:
+- Word or char level representation, chi-square+tfidf, word2vec, glove, fasttext or the concated one, elmo, bert
+- Model: CNN, BiLSTM, Self-attention,C-LSTM, RCNN, Capsule, HAN, SVM, XGBoost
 
 ## Dependencies
 - Python 3.6
@@ -12,6 +11,15 @@ Multi-class Text classification of Chinese text. The common models are implement
 
 ## Usage
 python run_classifier.py
+- for new data, set the new_data=True, the model will generate the tf_record and usage the model_params.py
+- for existed data, set new_data=False, the model will run from the saved tf_record and config.json
 
-## Rerefence
+## Purpose
+The classification is used to clarify the damaged part and damage type from vehicles comments
 
+## Evaluation
+Due to we have too many categories of labels (512 class for 100,000 examples), and not all of them are equally important, so we don’t use Macro- style evaluation. And the micro precision/recall/F1 is the same for multi-label classification. So we only check the accuracy and weighted F1 as reference
+
+## Ignored issue
+- Sometimes in one sample, more than one label are valid
+- Some labels have hierarchy relationship
