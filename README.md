@@ -1,5 +1,5 @@
 # Text_classification.
----
+
 ## Overview
 The repository implements the common algorithms for multi-class text classification:
 - Word or char level representation, chi-square+tfidf, word2vec, glove, fasttext or the concated one, elmo, bert
@@ -18,7 +18,7 @@ python run_classifier.py
 The classification is used to clarify the damaged part and damage type from vehicles comments
 
 ## Evaluation
-Due to we have too many categories of labels (512 class for 100,000 examples), and not all of them are equally important, so we don’t use Macro- style evaluation. And the micro precision/recall/F1 is the same for multi-label classification. So we only check the accuracy and weighted F1 as reference
+Due to we have too many categories of labels (ca. 500 class for 100,000 examples), and they are not equally important, so we don’t use Macro- evaluation. And the Micro- precision/recall/F1 is the same for multi-label classification. So we check the accuracy and weighted F1
 
 ## Ignored issue
 - Sometimes in one sample, more than one label are valid
