@@ -19,8 +19,6 @@ def convert_to_unicode(text):
 
 def create_vocab_and_label(params):
     from prepare_inputs import OnlineProcessor
-    vocab = set()
-    vocab.update(['[PAD]','[SEP]','[CLS]','[unused1]','[unused2]','[unused3]','[unused4]','[unused5]','[unused6]'])
 
     '''
     with open('./data/vocab_word.txt','w',encoding='utf-8') as f:
@@ -28,12 +26,14 @@ def create_vocab_and_label(params):
             f.write('%s\n'% word)
     '''
 
-    logging.info('Vocab generating ...')
-
     online = OnlineProcessor(params=params, seq_length=params["seq_length"], chinese_seg=params['chinese_seg'],generate_label_map=True)
     online.get_train_examples(data_dir=params['data_dir'])
 
     if params['chinese_seg']=='word':
+        logging.info('Vocab generating ...')
+        vocab = set()
+        vocab.update(
+            ['[PAD]', '[SEP]', '[CLS]', '[unused1]', '[unused2]', '[unused3]', '[unused4]', '[unused5]', '[unused6]'])
         tokenizer = BasicTokenizer(chinese_seg='word', params=params)
         for example in online.train:
             vocab.update(tokenizer.tokenize(example.text_a))
@@ -46,9 +46,10 @@ def create_vocab_and_label(params):
         logging.warning("Bert already provide a chinese char list, so will not generate new")
 
 
-    with open('./data/label_dict.csv', 'w') as f:
+    with open('./data/label_dict.txt', 'w') as f:
         for key in online.label_map.keys():
-            f.write("%s,%s\n" % (key, online.label_map[key]))
+            if key!='':
+                f.write("%s,%s\n" % (key, online.label_map[key]))
     f.close()
 
 

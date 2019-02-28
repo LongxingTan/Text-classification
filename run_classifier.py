@@ -17,8 +17,7 @@ from models._loss import create_loss
 from models._optimization import create_optimizer_basic_adam,create_optimizer_warmup_adam
 from models._eval import create_eval,create_eval_sk
 from tokenization import create_vocab_and_label
-#tf.logging.set_verbosity(tf.logging.INFO)
-# without logging configuration, tensorflow won't print the training information
+
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
@@ -152,14 +151,14 @@ if __name__=="__main__":
         online.get_test_examples(data_dir=params['data_dir'],generate_file=True)
         config.to_json_string('./config.json', params)
 
-    #run_classifier(textmodel=TextBert,params=params,data_process_class=online,init_checkpoint=params['bert_init_checkpoint'])
+    run_classifier(textmodel=TextBert,params=params,data_process_class=online,init_checkpoint=params['bert_init_checkpoint'])
     #run_classifier(textmodel=TextCNN,params=params,data_process_class=online)
     #run_classifier(textmodel=Bi_LSTM,params=params,data_process_class=online)
     #run_classifier(textmodel=GRU_Attention,params=params,data_process_class=online)
     #run_classifier(textmodel=Self_attention,params=params,data_process_class=online)
     #run_classifier(textmodel=RCNN,params=params,data_process_class=online)
     #run_classifier(textmodel=C_LSTM, params=params, data_process_class=online)
-    run_classifier(textmodel=Capsule,params=params,data_process_class=online)
+    #run_classifier(textmodel=Capsule,params=params,data_process_class=online)
 
 
     label, predict = [], []

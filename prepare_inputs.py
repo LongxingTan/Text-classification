@@ -37,11 +37,11 @@ class DataProcessor:
 class OnlineProcessor(DataProcessor):
     def __init__(self,params,seq_length,chinese_seg,generate_label_map=False):
         self.seq_length = seq_length
-        self.params=params #pass parameters by reference in python
+        self.params = params #pass parameters by reference in python
         self.tokenizer = tokenization.BasicTokenizer(chinese_seg=chinese_seg, params=params)
-        self.generate_label_map=generate_label_map
-        if generate_label_map:
-            self.labels=set()
+        self.generate_label_map = generate_label_map
+        if self.generate_label_map:
+            self.labels=set(['NA'])
             self.label_map = {}
         else:
             _,self.label_map=self.load_label_dict()
@@ -54,7 +54,6 @@ class OnlineProcessor(DataProcessor):
         if self.generate_label_map:
             for i, label in enumerate(self.get_labels()):
                 self.label_map[label] = i
-            self.label_map['NA']=len(self.get_labels())
             self.params.update(n_class=len(self.get_labels()))
 
         if generate_file:
@@ -96,8 +95,7 @@ class OnlineProcessor(DataProcessor):
         examples=[]
         for (i,line) in enumerate(lines):
             guid="%s-%s"%(set_type,i)
-            text_a=tokenization.convert_to_unicode(line[0])
-
+            text_a=tokenization.convert_to_unicode(line[0]) # note that if line[0] is the completed text
             if set_type=='test':
                 label='NA'
             else:
@@ -166,8 +164,9 @@ class OnlineProcessor(DataProcessor):
 
     def load_label_dict(self):
         index2label, label2index = {}, {}
-        reader = csv.reader(open('./data/label_dict.csv', 'r'))
+        reader = open('./data/label_dict.txt', 'r').readlines()
         for row in reader:
+            row=row.split(',')
             index2label.update({int(row[1]): row[0]})
             label2index.update({row[0]: int(row[1])})
         return index2label,label2index

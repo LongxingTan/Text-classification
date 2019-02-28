@@ -1,17 +1,6 @@
 import pandas as pd
 import os
 import re
-# air bag and airbag
-#interior new car, interior old car
-#Brake Pad Pad
-#CD/DVD driver DVD/CD driver
-#Engine belt, Engine poly-v-belt
-#Key remote control and key less go
-#park man , parktronic
-#multimedia, multomedia/speaker, speaker
-# steering gear, steering gear gear
-#turn signal light/turm signal lamp
-#usb port, usb jerk
 
 def preprocess(file_path,file_type='excel'):
     result=pd.DataFrame()
@@ -35,15 +24,34 @@ def preprocess(file_path,file_type='excel'):
     result['text']=result['text'].apply(lambda x: x[position(x):])
     #result['text']=result['text'].apply(lambda x: str(x).split('首次')[-1])
     #result['text']=result['text'].str.strip('：').str.strip('，')
-    result['text']=result['text'].apply(lambda x: ','.join(re.split('[，：。,:.]', x)[1:6]))
+    result['text']=result['text'].apply(lambda x: ','.join(re.split('[，：。,:.]', x)[1:7]))
+    result['text_1']=result['text'].apply(lambda x: re.split('[,]',x)[0] if '购买' not in re.split('[,]',x)[0] else '')
+    result['text_2'] = result['text'].apply(lambda x: '，'.join(re.split('[,]',x)[1:]))
+    result['text']=result['text_1']+result['text_2']
     result['part']=result['part'].str.strip()
-    result=result.loc[~result['part'].isin(['NA','Firecase','Delete','Na']),:]
-    result=result.loc[~result['type'].isin(['NA','Delete','Na']),:]
-    result['complaint']=result['part']+' '+result['type']
-    result.drop(columns=['part','type'], inplace=True)
-    result.drop_duplicates(inplace=True)
-    result.dropna(inplace=True)
+    result = result.loc[~result['part'].isin(['NA', 'Firecase', 'Delete', 'Na']), :]
+    result = result.loc[~result['type'].isin(['NA', 'Delete', 'Na']), :]
 
+    result['part'] = result['part'].apply(lambda x: str(x).replace('Brake Pad Pad','Brake Pad'))
+    result['part'] = result['part'].apply(lambda x: str(x).replace('Air bag', 'Airbag'))
+    result['part'] = result['part'].apply(lambda x: str(x).replace('CD/DVD driver', 'DVD/CD driver'))
+    result['part'] = result['part'].apply(lambda x: str(x).replace('Engine poly-v-belt', 'Engine belt'))
+    result['part'] = result['part'].apply(lambda x: str(x).replace('Key remote control', 'KEYLESS-GO'))
+    result['part'] = result['part'].apply(lambda x: str(x).replace('Parkman', 'Parktronic'))
+    #result['part'] = result['part'].apply(lambda x: str(x).replace('Multimedia', 'Multimedia/Speaker'))
+    #result['part'] = result['part'].apply(lambda x: str(x).replace('Speaker', 'Multimedia/Speaker'))
+    result['part'] = result['part'].apply(lambda x: str(x).replace('Steering Gear Gear', 'Steering gear'))
+    result['part'] = result['part'].apply(lambda x: str(x).replace('Turn signal lamp', 'Turn signal light'))
+    result['part'] = result['part'].apply(lambda x: str(x).replace('USB jerk', 'Usb'))
+    result['part'] = result['part'].apply(lambda x: str(x).replace('USB port', 'Usb'))
+    result['part'] = result['part'].apply(lambda x: str(x).replace('Interior old car', 'Interior'))
+    result['part'] = result['part'].apply(lambda x: str(x).replace('Interior new car', 'Interior'))
+
+    result['len']=result['text'].apply(lambda x: len(x))
+    result=result.loc[result['len']>15,:]
+    result['complaint']=result['part']+' '+result['type']
+    result.drop(columns=['part','type','text_1','text_2','len'], inplace=True)
+    result.drop_duplicates(inplace=True)
 
     # split into train, dev and test
     result=result.sample(frac=1).reset_index(drop=True)
