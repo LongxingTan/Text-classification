@@ -16,7 +16,7 @@ def preprocess(file_path,file_type='excel'):
             data['text']=data['Description']
             result=result.append(data.loc[:, ['text', 'QFS_Tier1', 'QFS_Tier3']])
 
-    # basic cleaning
+    # basic cleaning, task specific
     result['text']=result['text'].apply(lambda x: re.sub(re.compile(r"\t| |\s"),'',str(x)))
     date_pattern=re.compile(r'(\d{4}-\d{1,2}-\d{1,2})')
     if_position=lambda x: [date.end() for date in date_pattern.finditer(x)]
@@ -24,9 +24,9 @@ def preprocess(file_path,file_type='excel'):
     result['text']=result['text'].apply(lambda x: x[position(x):])
     #result['text']=result['text'].apply(lambda x: str(x).split('首次')[-1])
     #result['text']=result['text'].str.strip('：').str.strip('，')
-    result['text']=result['text'].apply(lambda x: ','.join(re.split('[，：。,:.]', x)[1:7]))
-    result['text_1']=result['text'].apply(lambda x: re.split('[,]',x)[0] if '购买' not in re.split('[,]',x)[0] else '')
-    result['text_2'] = result['text'].apply(lambda x: '，'.join(re.split('[,]',x)[1:]))
+    result['text']=result['text'].apply(lambda x: '，'.join(re.split('[，：。,:.]', x)[1:]))
+    #result['text_1']=result['text'].apply(lambda x: re.split('[,]',x)[0] if '购买' not in re.split('[,]',x)[0] else '')
+    #result['text_2'] = result['text'].apply(lambda x: '，'.join(re.split('[,]',x)[1:]))
     result['text']=result['text_1']+result['text_2']
     result['part']=result['part'].str.strip()
     result = result.loc[~result['part'].isin(['NA', 'Firecase', 'Delete', 'Na']), :]

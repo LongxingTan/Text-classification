@@ -7,7 +7,6 @@ import gensim
 import tokenization
 
 # char level or word level,
-# pretrained model, solve the oov
 # vocab choose, filter the low or high frequency
 
 class Embedding_layer():
@@ -18,7 +17,8 @@ class Embedding_layer():
         self.vocab=vocab
         self.params=params
 
-    def create_embedding_table(self,embedding_type):
+    def create_embedding_table(self,embedding_type,name):
+        oov_vocab,in_vocab=set(),set()
         if embedding_type=='random':
             embedding_table = tf.Variable(tf.random_uniform([self.vocab_size, self.embed_size], -1.0, 1.0),name='embed_w')
             return embedding_table
@@ -27,45 +27,56 @@ class Embedding_layer():
             embedding_file=self.params['word2vec_file'] ##https://github.com/Embedding/Chinese-Word-Vectors
             embedding_vocab=gensim.models.KeyedVectors.load_word2vec_format(embedding_file,binary=True,
                                                                             encoding='utf-8',unicode_errors='ignore')
-            embedding_table=np.zeros((self.vocab_size,self.embed_size))
-            self.vocab,index_vocab=tokenization.load_vocab(vocab_file=os.path.join(self.params['data_dir'],'vocab_word.txt'))
-            #Todo print OOV rate
+            embedding_table=tf.zeros((self.vocab_size,self.embed_size),name=name+'_table')
+            self.vocab,index_vocab=tokenization.load_vocab(vocab_file=os.path.join(self.params['data_dir'],'vocab_word.txt'),
+                                                           params=self.params)
+
             for word,i in self.vocab.items():
                 if word in embedding_vocab.vocab:
                     embedding_table[i]=embedding_vocab[word]
+                    in_vocab.add(word)
                 else:
                     embedding_table[i]=np.random.random(self.embed_size)
+                    oov_vocab.add(word)
+            tf.logging.info('OOV:%f' % (len(oov_vocab)/(len(oov_vocab)+len(in_vocab))))
 
             if embedding_type=='word2vec_finetune':
                 trainable=True
             elif embedding_type=='word2vec_static':
                 trainable=False
-            else: print("word2vec word embedding type please choose 'static' or 'finetune'")
+            else:
+                trainable=False
+                print("word2vec word embedding type please choose 'static' or 'finetune'")
             embedding_table2 = tf.get_variable(name='embedding_w', shape=[self.vocab_size, self.embed_size],
-                                                  initializer=tf.constant_initializer(embedding_table), trainable=trainable)
+                                               initializer=tf.constant_initializer(embedding_table), trainable=trainable)
             return embedding_table2
 
         elif re.search('fasttext',embedding_type) is not None:
             #https://fasttext.cc/docs/en/crawl-vectors.html
             embedding_vocab=self._load_fast_text(embedding_file=self.params['fasttext_file'])
-            embedding_table = np.zeros((self.vocab_size, self.embed_size))
-            self.vocab, index_vocab = tokenization.load_vocab(vocab_file=os.path.join(self.params['data_dir'], 'vocab_word.txt'))
-            # Todo print OOV rate
+            embedding_table = tf.zeros((self.vocab_size, self.embed_size),name=name+'_table')
+            self.vocab, index_vocab = tokenization.load_vocab(vocab_file=os.path.join(self.params['data_dir'], 'vocab_word.txt'),
+                                                              params=self.params)
+
             for word, i in self.vocab.items():
-                if word in embedding_vocab.items():
+                if word in embedding_vocab.keys():
                     embedding_table[i] = embedding_vocab[word]
+                    in_vocab.add(word)
                 else:
                     embedding_table[i] = np.random.random(self.embed_size)
+                    oov_vocab.add(word)
 
             if embedding_type == 'fasttext_finetune':
                 trainable = True
             elif embedding_type == 'fasttext_static':
                 trainable = False
             else:
+                trainable=False
                 print("fasttext word embedding type please choose 'static' or 'finetune'")
-            embedding_table2 = tf.get_variable(name='embedding_w', shape=[self.vocab_size, self.embed_size],
+            embedding_table2 = tf.get_variable(name=name+'embedding_w', shape=[self.vocab_size, self.embed_size],
                                                initializer=tf.constant_initializer(embedding_table),
                                                trainable=trainable)
+            tf.logging.info('OOV:%f' % (len(oov_vocab) / (len(oov_vocab) + len(in_vocab))))
             return embedding_table2
 
         elif re.search('glove',embedding_type) is not None:
@@ -78,16 +89,16 @@ class Embedding_layer():
 
 
     def __call__(self,x):
-        if self.embedding_type!='multi-channel':
-            embedding_table = self.create_embedding_table(embedding_type=self.embedding_type)
+        if self.embedding_type!='multi_channel':
+            embedding_table = self.create_embedding_table(embedding_type=self.embedding_type,name=self.embedding_type+'w')
             with tf.name_scope("embedding"):
                 embeddings = tf.nn.embedding_lookup(embedding_table, x)
                 return embeddings
         else:
-            embedding_table1=self.create_embedding_table(embedding_type='word2vec_static')
+            embedding_table1=self.create_embedding_table(embedding_type='word2vec_static',name='word2vec_w')
             embeddings1=tf.nn.embedding_lookup(embedding_table1,x)
 
-            embedding_table2=self.create_embedding_table(embedding_type='fasttext_static')
+            embedding_table2=self.create_embedding_table(embedding_type='fasttext_static',name='fasttext_w')
             embeddings2=tf.nn.embedding_lookup(embedding_table2,x)
             embeddings=tf.concat([embeddings1,embeddings2],axis=-1)
             return embeddings
@@ -95,7 +106,7 @@ class Embedding_layer():
 
     def _load_fast_text(self,embedding_file):
         data = {}
-        with gzip.open(embedding_file, mode='rb') as f:
+        with gzip.open(embedding_file, mode='rb',errors='ignore') as f:
             for line_b in f:
                 line = line_b.decode('utf-8')
                 tokens = line.rstrip().split(' ')
