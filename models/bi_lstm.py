@@ -1,6 +1,6 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-from models._layer_normalization import BatchNormalization,LayerNormalization
+from models._normalization import BatchNormalization,LayerNormalization
 
 class Bi_LSTM(object):
     def __init__(self,training,params):
@@ -31,8 +31,17 @@ class Bi_LSTM(object):
                                                              inputs=embedding_outputs,
                                                              sequence_length=None,
                                                              dtype=tf.float32)
-            all_outputs = tf.concat(all_outputs, 2)  #shape [Batch_size,sentences_len,2*lstm_hidden_size]
-            rnn_outputs = tf.reduce_max(all_outputs, axis=1)
+            all_outputs = tf.concat(all_outputs, 2)  # [Batch_size,sentences_len,2* lstm_hidden_size]
+
+        with tf.name_scope('pool'):
+            #rnn_outputs = tf.reduce_max(all_outputs, axis=1)
+            max_pool=tf.layers.max_pooling1d(inputs=all_outputs,
+                                              pool_size=self.params['seq_length'],
+                                              strides=1) # => batch_size * 1 * filters
+            avg_pool=tf.layers.average_pooling1d(inputs=all_outputs,
+                                                 pool_size=self.params['seq_length'],
+                                                 strides=1)
+            rnn_outputs=tf.squeeze(tf.concat([max_pool,avg_pool],axis=-1),axis=1)
             rnn_outputs = self.bn_layer(rnn_outputs)
 
         if self.training:

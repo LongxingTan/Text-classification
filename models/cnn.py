@@ -1,6 +1,6 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-from models._layer_normalization import BatchNormalization,LayerNormalization
+from models._normalization import BatchNormalization,LayerNormalization
 
 
 class TextCNN(object):
@@ -15,7 +15,7 @@ class TextCNN(object):
 
     def build(self,inputs):
         with tf.name_scope("embed"):
-            embedded_outputs=self.embedding_layer(inputs)
+            embedded_outputs=self.embedding_layer(inputs) # => batch_size* seq_length* embedding_dim
 
         if self.training:
             embedded_outputs=tf.nn.dropout(embedded_outputs,self.params['embedding_dropout_keep'])
@@ -28,13 +28,13 @@ class TextCNN(object):
                                        kernel_size=[kernel_size],
                                        strides=1,
                                        padding='valid',
-                                       activation=tf.nn.relu)
+                                       activation=tf.nn.relu) # => batch_size *(seq_length-kernel_size+1)* filters
                 pool1=tf.layers.max_pooling1d(inputs=conv1,
                                               pool_size=self.params['seq_length'] - kernel_size + 1,
-                                              strides=1)
+                                              strides=1) # => batch_size * 1 * filters
                 conv_output.append(pool1)
 
-        self.cnn_output_concat=tf.concat(conv_output,2) #[batch_size,1,params['filters']*len(params['kernel_sizes'])
+        self.cnn_output_concat=tf.concat(conv_output,2) # => batch_size*1* (filters*len_kernels)
         self.cnn_out=tf.squeeze(self.cnn_output_concat,axis=1)
         self.cnn_out = self.bn_layer(self.cnn_out)
 

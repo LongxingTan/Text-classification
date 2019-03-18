@@ -24,3 +24,4 @@ python run_classifier.py
 ## Ignored property
 - Sometimes in one sample, more than one label are valid
 - Some labels have hierarchy relationship
+- imbalance issue: weighted loss, data argument, anomaly detection, upsampling and downsampling

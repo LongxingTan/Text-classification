@@ -5,8 +5,7 @@ params=defaultdict(
     file_based=True,
     batch_size=128,
     num_train_epochs=5,
-    learning_rate=1e-4,#5e-5
-    learning_rate_warmup_steps=500,
+    learning_rate=1e-4, # original value if use warm up
 
     vocab_size=None,
     n_class=None,
@@ -16,15 +15,15 @@ params=defaultdict(
     log_dir='./log',
 
     #embedding
-    chinese_seg='char',  # word ,char, mix
-    seq_length=100, #adjust
+    chinese_seg='word',  # word ,char, mix
+    seq_length=90, #adjust
 
     embedding_size=300,
-    embedding_type='random', # random, word2vec_static,word2vec_finetune,fasttext_static,fasttext_finetune,multi_channel
+    embedding_type='fasttext_finetune', # random, word2vec_static,word2vec_finetune,fasttext_static,fasttext_finetune,multi_channel
     embedding_dropout_keep=0.95,
 
     #CNN
-    kernel_sizes=[3,5,10],
+    kernel_sizes=[3,5,7],
     filters=128,
 
     # RNN model parameters

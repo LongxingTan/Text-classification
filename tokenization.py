@@ -1,3 +1,4 @@
+# encoding:utf-8
 import unicodedata
 import jieba
 #import snownlp
@@ -19,7 +20,6 @@ def convert_to_unicode(text):
 
 def create_vocab_and_label(params):
     from prepare_inputs import OnlineProcessor
-
     online = OnlineProcessor(params=params, seq_length=params["seq_length"], chinese_seg=params['chinese_seg'],generate_label_map=True)
     online.get_train_examples(data_dir=params['data_dir'])
 
@@ -78,6 +78,7 @@ class BasicTokenizer(object):
         elif self.chinese_seg=='word':
             self.vocab, self.index_vocab = load_vocab(vocab_file=os.path.join(self.params['data_dir'],'vocab_word.txt'),
                                                       params=self.params)
+        self.stopwords=[line.strip() for line in open('./data/stop_words.txt','r',encoding='utf-8').readlines()]
 
 
     def tokenize(self,text):
@@ -96,7 +97,6 @@ class BasicTokenizer(object):
                 token=token.lower()
                 token=self._run_strip_accents(token)
             split_tokens.extend(self._run_split_on_punc(token))
-        #print(split_tokens)
         output_tokens=self._whitespace_tokenize(" ".join(split_tokens))
         return output_tokens
 
@@ -133,12 +133,23 @@ class BasicTokenizer(object):
                 output.append(char)
         return "".join(output)
 
-    def _tokenize_chinese_words(self,text):
+    def _tokenize_chinese_words(self,text,shorter=True):
         jieba.load_userdict('./data/user_dict.txt')
-        wordlist = jieba.lcut(text,HMM=False)
+        if shorter:
+            wordlist=self.shorter_chinese_cut(text)
+        else:
+            wordlist = jieba.cut(text,HMM=False)
+
         #self.vocab.update([i for i in ])
         #print("/".join(jieba.cut(text)))
-        return " ".join(wordlist)
+        wordlist_new =[]
+        for word in wordlist:
+            if word not in self.stopwords:
+                wordlist_new.append(word)
+            else:
+                continue
+        return " ".join(wordlist_new)
+
 
     def _whitespace_tokenize(self,text):
         text=text.strip()
@@ -214,45 +225,22 @@ class BasicTokenizer(object):
             return True
         return False
 
-
-def continue_cut(line):
-    result=[]
-    for long_word in jieba.lcut(line,HMM=False):
-        subword_list=get_subword_list(long_word)
-        if isinstance(subword_list,list):
-            go_subword_list(subword_list,result)
-        elif isinstance(subword_list,str):
-            result.append(subword_list)
-        else:
-            print('error')
-    return result
-
-def get_subword_list(long_word):
-    if not isZH(long_word[0]):
-        return long_word
-    if len(long_word)>4:
-        jieba.del_word(long_word)
-        return jieba.lcut(long_word,HMM=False)
-    else:
-        return long_word
-
-
-def go_subword_list(input_list,result):
-    for long_word in input_list:
-        if len(long_word)>4:
-            subword_list=get_subword_list(long_word)
-            if isinstance(subword_list,list):
-                go_subword_list(subword_list,result)
-            elif isinstance(subword_list,str):
-                result.append(subword_list)
+    def shorter_chinese_cut(self,line):
+        result = []
+        for long_word in jieba.lcut(line, HMM=False):
+            cp = ord(long_word[0])
+            if self._is_chinese_char(cp) and len(long_word)>3:
+                jieba.del_word(long_word)
+                result.extend(jieba.lcut(long_word))
             else:
-                print('error')
-        else:
-            result.append(long_word)
+                result.append(long_word)
+        return result
 
 
 if __name__=="__main__":
     from model_params import params
     tokenizer=BasicTokenizer(chinese_seg='word',params=params)
-    words=tokenizer.tokenize("2014-01-06 客户于露女士三个工作日外第五次投诉：针对其反映的C 260车辆，因车辆在行驶中及冷车启动时出现异响问题送修至北京保利星徽。经销商对车辆检测后告知需要更换助力泵。客户非常不满意，质疑产品质量。另外反映车辆还存在异味问题。客户对此不能接受，要求厂家回复一事，至今没有工作人员与其联系。客户再次致电表示希望由厂家给予解答，助力泵是不是两年或三年就会坏的，还是质量就有问题，客户希望得到专业的解答，其次客户希望由北京奔驰给予合理的解决方案，同时客户还表示投诉反馈的等待时间太长，不能接受，服务水平问题。现在客户非常着急，催促厂家的工作人员核实情况后尽快给予回复解决")
+    words=tokenizer._tokenize_chinese_words("客户三个工作日外第五次投诉：针对其反映的车辆，因车辆在行驶中及冷车启动时出现异响问题送修至北京保利星徽。经销商对车辆检测后告知需要更换助力泵。客户非常不满意，质疑产品质量。另外反映车辆还存在异味问题。客户对此不能接受，要求厂家回复一事，至今没有工作人员与其联系。客户再次致电表示希望由厂家给予解答，助力泵是不是两年或三年就会坏的，还是质量就有问题，客户希望得到专业的解答，其次客户希望由北京奔驰给予合理的解决方案，同时客户还表示投诉反馈的等待时间太长，不能接受，服务水平问题。现在客户非常着急，催促厂家的工作人员核实情况后尽快给予回复解决")
+    result=tokenizer.shorter_chinese_cut("客户三个工作日外第五次投诉：针对其反映的车辆，因车辆在行驶中及冷车启动时出现异响问题送修至北京保利星徽。经销商对车辆检测后告知需要更换助力泵。客户非常不满意，质疑产品质量。另外反映车辆还存在异味问题。客户对此不能接受，要求厂家回复一事，至今没有工作人员与其联系。客户再次致电表示希望由厂家给予解答，助力泵是不是两年或三年就会坏的，还是质量就有问题，客户希望得到专业的解答，其次客户希望由北京奔驰给予合理的解决方案，同时客户还表示投诉反馈的等待时间太长，不能接受，服务水平问题。现在客户非常着急，催促厂家的工作人员核实情况后尽快给予回复解决")
     print(words)
+    print(result)

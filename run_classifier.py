@@ -1,3 +1,4 @@
+# encoding:utf-8
 import os
 import csv
 import logging
@@ -12,6 +13,7 @@ from models.gru_attention import GRU_Attention
 from models.capsule import Capsule
 from models.c_lstm import C_LSTM
 from models.rcnn import RCNN
+from models.vdcnn import VDCNN
 from prepare_inputs import OnlineProcessor,file_based_input_fn_builder,input_fn_builder
 from models._loss import create_loss
 from models._optimization import create_optimizer_basic_adam,create_optimizer_warmup_adam
@@ -24,7 +26,7 @@ logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(messa
 logger = logging.getLogger(__name__)
 
 
-new_data=False  # if it's new data for model
+new_data=True  # if it's new data for model
 if not new_data:
     # The already used data to select the model or predict, config use the saved json
     config.from_json_file('./config.json')
@@ -55,18 +57,19 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
         accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32), name='accuracy')
         logging_hook = tf.train.LoggingTensorHook({"loss": loss, "accuracy": accuracy}, every_n_iter=100)
         tf.summary.scalar('accuracy', accuracy)
-        #tf.summary.image(...)
 
         if init_checkpoint:
             tvars = tf.trainable_variables()
             initialized_variable_names = {}
             (assignment_map,initialized_variable_names)=get_assignment_map_from_checkpoint(tvars,init_checkpoint)
             tf.train.init_from_checkpoint(init_checkpoint,assignment_map)
+            '''
             for var in tvars:
                 init_string = ""
                 if var.name in initialized_variable_names:
                     init_string = ", *INIT_FROM_CKPT*"
                 tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape, init_string)
+            '''
 
 
         if mode == tf.estimator.ModeKeys.PREDICT:
@@ -87,7 +90,7 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
         else:
             #train_op=create_optimizer_basic_adam(loss,learning_rate=params['learning_rate'])
             num_train_steps = int(params['len_train_examples'] / params['batch_size'] * params['num_train_epochs'])
-            train_op=create_optimizer_warmup_adam(loss,init_learning_rate=params['learning_rate'],num_train_steps=num_train_steps,num_warmup_steps=int(0.15*num_train_steps))
+            train_op=create_optimizer_warmup_adam(loss,init_learning_rate=params['learning_rate'],num_train_steps=num_train_steps,num_warmup_steps=int(0.10*num_train_steps))
             return tf.estimator.EstimatorSpec(mode=mode,
                                               loss=loss,
                                               train_op=train_op,
@@ -151,14 +154,15 @@ if __name__=="__main__":
         online.get_test_examples(data_dir=params['data_dir'],generate_file=True)
         config.to_json_string('./config.json', params)
 
-    run_classifier(textmodel=TextBert,params=params,data_process_class=online,init_checkpoint=params['bert_init_checkpoint'])
-    #run_classifier(textmodel=TextCNN,params=params,data_process_class=online)
+    #run_classifier(textmodel=TextBert,params=params,data_process_class=online,init_checkpoint=params['bert_init_checkpoint'])
+    run_classifier(textmodel=TextCNN,params=params,data_process_class=online)
     #run_classifier(textmodel=Bi_LSTM,params=params,data_process_class=online)
     #run_classifier(textmodel=GRU_Attention,params=params,data_process_class=online)
     #run_classifier(textmodel=Self_attention,params=params,data_process_class=online)
     #run_classifier(textmodel=RCNN,params=params,data_process_class=online)
     #run_classifier(textmodel=C_LSTM, params=params, data_process_class=online)
     #run_classifier(textmodel=Capsule,params=params,data_process_class=online)
+    #run_classifier(textmodel=VDCNN, params=params, data_process_class=online)
 
 
     label, predict = [], []

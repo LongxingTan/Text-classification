@@ -1,6 +1,6 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-from models._layer_normalization import BatchNormalization,LayerNormalization
+from models._normalization import BatchNormalization,LayerNormalization
 
 class C_LSTM(object):
     def __init__(self, training,params):
