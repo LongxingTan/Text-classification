@@ -20,9 +20,9 @@ from models._optimization import create_optimizer_basic_adam,create_optimizer_wa
 from models._eval import create_eval,create_eval_sk
 from tokenization import create_vocab_and_label
 
-logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                    datefmt = '%m/%d/%Y %H:%M:%S',
-                    level = logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S',
+                    level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -58,19 +58,10 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
         logging_hook = tf.train.LoggingTensorHook({"loss": loss, "accuracy": accuracy}, every_n_iter=100)
         tf.summary.scalar('accuracy', accuracy)
 
-        if init_checkpoint:
+        if init_checkpoint: # for bert
             tvars = tf.trainable_variables()
-            initialized_variable_names = {}
             (assignment_map,initialized_variable_names)=get_assignment_map_from_checkpoint(tvars,init_checkpoint)
             tf.train.init_from_checkpoint(init_checkpoint,assignment_map)
-            '''
-            for var in tvars:
-                init_string = ""
-                if var.name in initialized_variable_names:
-                    init_string = ", *INIT_FROM_CKPT*"
-                tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape, init_string)
-            '''
-
 
         if mode == tf.estimator.ModeKeys.PREDICT:
             tf.logging.info("**** Start predict ****")
@@ -118,7 +109,7 @@ def run_classifier(textmodel,params,data_process_class,init_checkpoint=None):
     else:
         eval_input_fn=file_based_input_fn_builder(input_file=os.path.join(params['data_dir'],'eval.tf_record'),
                                                   params=params,is_training=False)
-    eval_steps = int(params['len_dev_examples'] // params['batch_size'])
+    eval_steps = int(params['len_dev_examples'] // params['batch_size']+1)
     result=estimator.evaluate(input_fn=eval_input_fn,steps=eval_steps)
 
     output_eval_file=os.path.join(params['output_dir'], 'eval_result.txt')
@@ -131,13 +122,12 @@ def run_classifier(textmodel,params,data_process_class,init_checkpoint=None):
         predict_input_fn=input_fn_builder(features=data_process_class.get_test_examples(data_dir=params['data_dir']),
                                           batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=False)
     else:
-
         predict_input_fn=file_based_input_fn_builder(input_file=os.path.join(params['data_dir'],'test.tf_record'),
                                                      params=params,is_training=False)
     result=estimator.predict(input_fn=predict_input_fn)
 
     predict_file=os.path.join(params['output_dir'], 'test_result.csv')
-    with tf.gfile.GFile(predict_file, 'w') as writer:
+    with open(predict_file, 'w') as writer:
         for i,prediction in enumerate(result):
             label=prediction['labels']
             probability=prediction['probabilities']
@@ -145,7 +135,7 @@ def run_classifier(textmodel,params,data_process_class,init_checkpoint=None):
             writer.write(output_line)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     online = OnlineProcessor(params=params, seq_length=params["seq_length"], chinese_seg=params['chinese_seg'])
 
     if new_data:

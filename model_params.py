@@ -19,7 +19,7 @@ params=defaultdict(
     seq_length=90, #adjust
 
     embedding_size=300,
-    embedding_type='fasttext_finetune', # random, word2vec_static,word2vec_finetune,fasttext_static,fasttext_finetune,multi_channel
+    embedding_type='random',  # random, word2vec_static,word2vec_finetune,fasttext_static,fasttext_finetune,multi_channel
     embedding_dropout_keep=0.95,
 
     #CNN
@@ -47,8 +47,6 @@ params=defaultdict(
 
     #
     penalization=False,
-
-    #
     dense_hidden_size=1024,
     dropout_keep=0.95,
 )

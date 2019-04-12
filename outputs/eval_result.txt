@@ -1,0 +1,3 @@
+ acc = 0.7
+ global_step = 24
+ loss = 0.980567

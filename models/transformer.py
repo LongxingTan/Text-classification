@@ -286,3 +286,4 @@ class Transformer(object):
     def __call__(self, inputs, targets=None):
         self.build(inputs)
         return self.logits
+

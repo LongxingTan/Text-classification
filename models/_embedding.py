@@ -5,7 +5,8 @@ import numpy as np
 import tensorflow as tf
 import gensim
 import tokenization
-# Todo: vocab choose, filter the low or high frequency
+from collections import Counter
+
 
 class Embedding_layer():
     def __init__(self,vocab_size,embed_size,params,embedding_type='random',vocab=None):
@@ -115,3 +116,19 @@ class Embedding_layer():
                     tokens = line.rstrip().split(' ')
                     data[tokens[0]] = list(map(float, tokens[1:]))
         return data
+
+    def _filter_frequency_vocab(self,x,low=0.05,high=0.95):
+        filtered_vocab=[]
+        for example in x:
+            filtered_vocab.extend(example)
+        vocab_count_dict=Counter(filtered_vocab)
+        sorted(vocab_count_dict.items(),key=lambda x: x[1],reverse=True)
+        value=np.array([value for value in vocab_count_dict.values()])
+        value_low_quantile=np.quantile(value,low)
+        value_high_quantile=np.quantile(value,high)
+        vocab_count_dict_filtered={k:v for k,v in vocab_count_dict.items() if v>=value_low_quantile and v<=value_high_quantile}
+        vocab_filtered=list(vocab_count_dict_filtered.keys())
+        return vocab_filtered
+
+    def _create_tfidf_feature_dict(self,chi_k): # exists in old version of model_tf_archives/_utils
+        pass

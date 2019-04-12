@@ -237,7 +237,7 @@ class BasicTokenizer(object):
         return result
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     from model_params import params
     tokenizer=BasicTokenizer(chinese_seg='word',params=params)
     words=tokenizer._tokenize_chinese_words("客户三个工作日外第五次投诉：针对其反映的车辆，因车辆在行驶中及冷车启动时出现异响问题送修至北京保利星徽。经销商对车辆检测后告知需要更换助力泵。客户非常不满意，质疑产品质量。另外反映车辆还存在异味问题。客户对此不能接受，要求厂家回复一事，至今没有工作人员与其联系。客户再次致电表示希望由厂家给予解答，助力泵是不是两年或三年就会坏的，还是质量就有问题，客户希望得到专业的解答，其次客户希望由北京奔驰给予合理的解决方案，同时客户还表示投诉反馈的等待时间太长，不能接受，服务水平问题。现在客户非常着急，催促厂家的工作人员核实情况后尽快给予回复解决")

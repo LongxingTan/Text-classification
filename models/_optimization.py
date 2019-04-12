@@ -7,6 +7,15 @@ def create_optimizer_basic_adam(loss,learning_rate):
     train_op=optimizer.minimize(loss,global_step=tf.train.get_global_step())
     return train_op
 
+def create_optimizer_mtl_adam(loss,learning_rate):
+    # multi task learning
+    train_ops=[]
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+    for i in range(len(loss)):
+        grads_and_vars = optimizer.compute_gradients(loss[i])
+        train_ops.append(optimizer.apply_gradients(grads_and_vars, global_step=tf.train.get_global_step()))
+    return train_ops
+
 
 def create_optimizer_warmup_adam(loss,init_learning_rate,num_train_steps,num_warmup_steps):
     global_step=tf.train.get_or_create_global_step()

@@ -29,7 +29,7 @@ def create_loss(logits,y_onehot,loss_type):
         loss=tf.reduce_mean(losses)
         return loss
 
-    else:
+    elif loss_type=='smape_loss':
         #smape_loss(true, predicted, weights):
         """
         Differentiable SMAPE loss
@@ -46,3 +46,11 @@ def create_loss(logits,y_onehot,loss_type):
         summ = tf.maximum(tf.abs(true_o) + tf.abs(pred_o) + epsilon, 0.5 + epsilon)
         smape = tf.abs(pred_o - true_o) / summ * 2.0
         return tf.losses.compute_weighted_loss(smape, weights=None, loss_collection=None)
+
+    elif loss_type=='multi_task_loss':
+        loss=[]
+        for i in range(len(y_onehot)):
+            with tf.name_scope("loss" + str(i)):
+                losses = tf.nn.softmax_cross_entropy_with_logits_v2(logits[i], y_onehot[i])
+                loss.append(tf.reduce_mean(losses))
+        return loss

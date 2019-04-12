@@ -1,13 +1,12 @@
 .gitignore
 /.idea/*
 /__pycache__/*
-/data_raw/*
-/data/*
-/outputs/*
+/data/raw/*
+/data/*.py
+/data/*.tf_record
 /models/*
 !/models/*.py
 /pretrained/*
 *.csv
 test.py
-test2.py
-config.py
+
