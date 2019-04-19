@@ -38,15 +38,14 @@ class DataProcessor:
 class OnlineProcessor(DataProcessor):
     def __init__(self,params,seq_length,chinese_seg,generate_label_map=False):
         self.seq_length = seq_length
-        self.params = params #pass parameters by reference in python
+        self.params = params  # pass parameters by reference in python
         self.tokenizer = tokenization.BasicTokenizer(chinese_seg=chinese_seg, params=params)
         self.generate_label_map = generate_label_map
         if self.generate_label_map:
             self.labels=set(['NA'])
             self.label_map = {}
         else:
-            _,self.label_map=self.load_label_dict()
-
+            _, self.label_map=self.load_label_dict()
 
     def get_train_examples(self,data_dir,generate_file=False):
         self.train=self._create_examples(self._read_csv(os.path.join(data_dir,'train.csv')),'train')
@@ -65,7 +64,6 @@ class OnlineProcessor(DataProcessor):
             train_features=self._convert_examples_to_features(self.train,self.seq_length,self.tokenizer)
             return train_features
 
-
     def get_dev_examples(self,data_dir,generate_file=False):
         dev=self._create_examples(self._read_csv(os.path.join(data_dir,'dev.csv')),'dev')
         self.params['len_dev_examples'] = len(dev)
@@ -76,7 +74,6 @@ class OnlineProcessor(DataProcessor):
         else:
             dev_features=self._convert_examples_to_features(dev,self.seq_length,self.tokenizer)
             return dev_features
-
 
     def get_test_examples(self,data_dir,generate_file=False):
         test=self._create_examples(self._read_csv(os.path.join(data_dir, 'test.csv')), 'test')
@@ -102,12 +99,10 @@ class OnlineProcessor(DataProcessor):
                 label='NA'
             else:
                 label=tokenization.convert_to_unicode(line[-1])
-
             if set_type=='train' and self.generate_label_map:
                 self.labels.add(label)
             examples.append(InputExample(guid=guid,text_a=text_a,text_b=None,label=label))
         return examples
-
 
     def _convert_single_example(self,example,seq_length,tokenizer):
         tokens_a=tokenizer.tokenize(example.text_a)  # Todo: optimize here if you want char and word concat input
@@ -120,7 +115,7 @@ class OnlineProcessor(DataProcessor):
         if len(tokens_a)>seq_length-2:
             tokens_a=tokens_a[0:(seq_length-2)]
 
-        tokens=[]
+        tokens = []
         tokens.append("[CLS]")
         for token in tokens_a:
             tokens.append(token)
@@ -147,7 +142,6 @@ class OnlineProcessor(DataProcessor):
             feature=self._convert_single_example(example,seq_length,tokenizer)
             features.append(feature)
         return features
-
 
     def _file_based_convert_examples_to_features(self,examples,seq_length,tokenizer,output_file):
         writer=tf.python_io.TFRecordWriter(output_file)

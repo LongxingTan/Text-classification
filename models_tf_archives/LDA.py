@@ -1,4 +1,4 @@
-from utils import *
+from models_tf_archives._utils import *
 from gensim.corpora import Dictionary
 from gensim import models
 
@@ -15,9 +15,6 @@ class LDA_gensim:
         for i in range(3):
             topics_array = np.array(topics_matrix[i][1])
             print([str(word[0]) for word in topics_array])
-
-
-
 
 
 x_data, y_data, n_classes = import_data('../CAC.csv')
@@ -55,5 +52,4 @@ edges = [(i, j, {'weight': topic_distance[i, j]})
 # keep edges with distance below the threshold value
 k = np.percentile(np.array([e[2]['weight'] for e in edges]), 20)
 edges = [e for e in edges if e[2]['weight'] < k]
-
 print(edges)

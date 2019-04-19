@@ -6,7 +6,7 @@
 /data/*.tf_record
 /models/*
 !/models/*.py
-/pretrained/*
+
 *.csv
 test.py
 

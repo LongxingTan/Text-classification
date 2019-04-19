@@ -4,8 +4,6 @@
 import tensorflow as tf
 from models_tf_archives._utils import *
 
-
-
 class Config():
     def __init__(self):
         self.embedding_dim=300
@@ -22,7 +20,6 @@ class Config():
         self.lstm_dim=128
         self.save_path='./HANnet.ckpt'
         self.penalization=True
-
 config = Config()
 
 class Self_attention:

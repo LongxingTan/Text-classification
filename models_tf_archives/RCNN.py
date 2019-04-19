@@ -24,9 +24,7 @@ class Config():
 
         self.filter_sizes=[2,4,6]
         self.filter_num=16
-
 config = Config()
-
 
 class RCNN():
     def __init__(self,session,x_train,y_train, x_test, y_test,vocabulary_size):

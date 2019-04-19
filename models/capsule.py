@@ -1,6 +1,5 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-from models._normalization import BatchNormalization,LayerNormalization
 
 class Capsule(object):
     def __init__(self, training,params):
@@ -10,7 +9,7 @@ class Capsule(object):
                                                embed_size=params['embedding_size'],
                                                embedding_type=params['embedding_type'],
                                                params=params)
-        self.capsule_layer_conv=Capsule_layer_conv(shape=[3,1,64,64],vec_length=8)
+        self.capsule_layer_conv=Capsule_layer_conv(shape=[3,1,64,64],vec_length=self.params['vec_length'])
         self.capsule_layer_dense=Capsule_layer_dense(hidden_size=params['n_class'])
 
     def build(self, inputs):

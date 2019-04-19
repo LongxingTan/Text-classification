@@ -17,6 +17,12 @@ Note that it's just prototypes for experimental purposes only
 - for new data, set the `new_data=True`, the model will generate the tf_record and usage the model_params.py
 - for existed data, set `new_data=False`, the model will run from the saved tf_record and config.json
 
+## Pretrained
+- `mkdir pretrained`, and make sure the word or char level, and chinese word segmentation use the same as pretrained model
+- [word2vec Chinese pretrained dowmload](https://github.com/Embedding/Chinese-Word-Vectors)
+- [fasttext Chinese pretrained download](https://fasttext.cc/docs/en/crawl-vectors.html)
+- [bert Chinese pretrained download from google](https://storage.googleapis.com/bert_models/2018_11_03/chinese_L-12_H-768_A-12.zip)
+
 ## Purpose
 - The classification is used to clarify the damaged part and damage type from vehicles comments
 

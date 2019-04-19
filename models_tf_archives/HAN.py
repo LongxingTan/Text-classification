@@ -7,7 +7,6 @@ import tensorflow as tf
 from models_tf_archives._utils import *
 
 
-
 class Config():
     def __init__(self):
         self.embedding_dim=300
@@ -24,10 +23,10 @@ class Config():
         self.lstm_dim=128
         self.save_path='./HANnet.ckpt'
         self.penalization=True
-
 config = Config()
 
-class HAN():
+
+class HAN(object):
     def __init__(self,session,x_train,y_train,x_test,y_test,n_sentences, each_sentence_length,vocabulary_size):
         self.sess=session
         self.x_train=x_train

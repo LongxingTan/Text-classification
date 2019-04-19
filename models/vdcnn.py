@@ -1,3 +1,4 @@
+# Very Deep Convolutional Neural Network
 import tensorflow as tf
 from models._embedding import Embedding_layer
 from models._normalization import BatchNormalization,LayerNormalization
@@ -14,7 +15,7 @@ class VDCNN(object):
                                              params=params)
         self.bn_layer=BatchNormalization()
         self.kmax_pooling=KMaxPooling()
-        self.depth=29
+        self.depth=17
         self.num_conv_blocks = (2, 2, 2, 2)
 
     def build(self,inputs):
@@ -34,9 +35,9 @@ class VDCNN(object):
 
 
         for i,layer in enumerate(self.num_conv_blocks):
-            with tf.variable_scope('conv_block_%s' % i):
+            with tf.variable_scope('conv_block_%s' % (i+1)):
                 for j in range(layer):
-                    with tf.variable_scope('sub_%s' %j):
+                    with tf.variable_scope('sub_%s' %(j+1)):
                         out = self.identity_block(out, filters=128, kernel_size=3,name=str(i)+str(j))
                         out=tf.layers.batch_normalization(out,center=True,scale=True,momentum=0.99,training=self.training,name=str(i)+str(j))
                         out = self.conv_block(out, filters=128, kernel_size=3, pool_type='max',name=str(i)+str(j))
@@ -54,13 +55,12 @@ class VDCNN(object):
 
 
 
-    def conv_block(self,inputs,filters,kernel_size,use_bias=False,shortcut=False,pool_type='max', sorted=True,name=1):
+    def conv_block(self,inputs,filters,kernel_size,name,use_bias=False,shortcut=False,pool_type='max', sorted=True):
         with tf.variable_scope('conv_block_%s' % name):
             block_conv1 = tf.layers.conv1d(inputs=inputs, filters=filters, kernel_size=kernel_size, strides=1,
                                            padding='same', name='conv_block1')
             block_bn1 = self.bn_layer(block_conv1,name='conv_bn1')
             outputs = tf.nn.relu(block_bn1)
-
 
             if shortcut:
                 residual = tf.layers.conv1d(inputs=inputs, filters=filters, kernel_size=1, strides=2, padding='same')
@@ -77,7 +77,7 @@ class VDCNN(object):
         return outputs
 
 
-    def identity_block(self,inputs,filters,kernel_size,use_bias=False,shortcut=False,name=1):
+    def identity_block(self,inputs,filters,kernel_size,name,use_bias=False,shortcut=False):
         with tf.variable_scope('identity_block_%s' % name):
             block_conv1 = tf.layers.conv1d(inputs=inputs, filters=filters, kernel_size=kernel_size, strides=1,
                                            padding='same', name='identity_conv1')
@@ -86,7 +86,7 @@ class VDCNN(object):
                 out = tf.add(outputs, inputs)
         return tf.nn.relu(outputs)
 
-    def downsampling(self,inputs,pool_type,sorted,name=1):
+    def downsampling(self,inputs,pool_type,sorted,name):
         with tf.variable_scope('down_sampling_%s' % name):
             if pool_type == 'max':
                 outputs = tf.layers.max_pooling1d(inputs, pool_size=[3], strides=2, padding='same', name='down_pool_max')

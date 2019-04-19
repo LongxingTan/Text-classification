@@ -58,7 +58,7 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
         logging_hook = tf.train.LoggingTensorHook({"loss": loss, "accuracy": accuracy}, every_n_iter=100)
         tf.summary.scalar('accuracy', accuracy)
 
-        if init_checkpoint: # for bert
+        if init_checkpoint:  # for bert
             tvars = tf.trainable_variables()
             (assignment_map,initialized_variable_names)=get_assignment_map_from_checkpoint(tvars,init_checkpoint)
             tf.train.init_from_checkpoint(init_checkpoint,assignment_map)
@@ -69,7 +69,6 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
                                'probabilities':probabilities}
             return tf.estimator.EstimatorSpec(mode=mode,
                                               predictions=prediction_dict)
-
 
         elif mode == tf.estimator.ModeKeys.EVAL:
             tf.logging.info("**** Start evaluate ****")
@@ -91,7 +90,8 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
 
 def run_classifier(textmodel,params,data_process_class,init_checkpoint=None):
     model_fn=model_fn_builder(textmodel,params=params,init_checkpoint=init_checkpoint)
-    estimator= tf.estimator.Estimator(model_fn=model_fn, model_dir=params["model_dir"])
+    run_config = tf.estimator.RunConfig(save_checkpoints_secs=180, keep_checkpoint_max=5)
+    estimator= tf.estimator.Estimator(model_fn=model_fn, model_dir=params["model_dir"],config=run_config)
 
     if not params['file_based']:
         train_input_fn=input_fn_builder(features=data_process_class.get_train_examples(data_dir=params['data_dir']),
@@ -183,4 +183,4 @@ if __name__ == "__main__":
             writer.writerow(row)
 
     eval=create_eval_sk(labels=label,predictions=predict)
-    print('evaluation:',eval)
+    print('Evaluation:',eval)
