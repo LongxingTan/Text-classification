@@ -14,8 +14,8 @@ Note that it's just prototypes for experimental purposes only
 
 ## Usage
 `python run_classifier.py`
-- in config.py, set the  `new_data=True`, /longmapsto generate the tf_record /longmapsto utilize config.py parameters
-- in config.py, set the  `new_data=False`, /longmapsto utilize the data from ./data/*tf_record /longmapsto utilize config.json parameters
+- in config.py, set the  `new_data=True`, $\mapsto$ generate the `./data/*.tf_record` $\mapsto$ utilize config.py parameters
+- in config.py, set the  `new_data=False`, $\mapsto$ utilize the data from `./data/*.tf_record` $\mapsto$ utilize config.json parameters
 
 ## Pretrained
 - `mkdir pretrained`, and make sure the word or char level, and chinese word segmentation use the same as pretrained model
