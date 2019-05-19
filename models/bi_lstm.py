@@ -2,6 +2,7 @@ import tensorflow as tf
 from models._embedding import Embedding_layer
 from models._normalization import BatchNormalization,LayerNormalization
 
+
 class Bi_LSTM(object):
     def __init__(self,training,params):
         self.training=training
@@ -27,9 +28,10 @@ class Bi_LSTM(object):
                 cell_fw = tf.nn.rnn_cell.DropoutWrapper(cell_fw, output_keep_prob=self.params['rnn_dropout_keep'])
                 cell_bw = tf.nn.rnn_cell.DropoutWrapper(cell_bw, output_keep_prob=self.params['rnn_dropout_keep'])
 
+            sequence_length=self._length(inputs)
             all_outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=cell_fw, cell_bw=cell_bw,
                                                              inputs=embedding_outputs,
-                                                             sequence_length=None,
+                                                             sequence_length=sequence_length,
                                                              dtype=tf.float32)
             all_outputs = tf.concat(all_outputs, 2)  # [Batch_size,sentences_len,2* lstm_hidden_size]
 
@@ -49,6 +51,13 @@ class Bi_LSTM(object):
 
         with tf.name_scope('output'):
             self.logits = tf.layers.dense(rnn_outputs,units=self.params['n_class'],name="logit")
+
+    @staticmethod
+    def _length(seq):
+        relevant = tf.sign(tf.abs(seq))
+        length = tf.reduce_sum(relevant, reduction_indices=1)
+        length = tf.cast(length, tf.int32)
+        return length
 
     def __call__(self,inputs,targets=None):
         self.build(inputs)

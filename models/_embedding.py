@@ -3,7 +3,7 @@ import os
 import bz2,gzip
 import numpy as np
 import tensorflow as tf
-import gensim
+#import gensim
 import tokenization
 from collections import Counter
 

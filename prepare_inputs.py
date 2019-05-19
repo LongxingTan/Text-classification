@@ -13,10 +13,12 @@ class InputExample:
         self.text_b=text_b
         self.label=label
 
+
 class InputFeatures:
     def __init__(self,input_ids,label_ids):
         self.input_ids=input_ids
         self.label_ids=label_ids
+
 
 class DataProcessor:
     def get_train_examples(self,data_dir):
@@ -42,7 +44,7 @@ class OnlineProcessor(DataProcessor):
         self.tokenizer = tokenization.BasicTokenizer(chinese_seg=chinese_seg, params=params)
         self.generate_label_map = generate_label_map
         if self.generate_label_map:
-            self.labels=set(['NA'])
+            self.labels=set(['NA']) # add a NA to saved label_dict.txt
             self.label_map = {}
         else:
             _, self.label_map=self.load_label_dict()
@@ -190,6 +192,7 @@ def file_based_input_fn_builder(input_file,is_training,params):
             example[name]=t
         return example
     return input_fn
+
 
 def input_fn_builder(features,batch_size,seq_length,is_training):
     input_ids=[]

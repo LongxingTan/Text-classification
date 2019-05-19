@@ -1,6 +1,6 @@
-Tire,0
-NA,1
-Brake,2
-Car body,3
-Door,4
-Engine,5
+Car body,0
+Tire,1
+Door,2
+Engine,3
+NA,4
+Brake,5

@@ -46,3 +46,6 @@ class TextCNN(object):
     def __call__(self,inputs,targets=None):
         self.build(inputs)
         return self.logits
+
+    def __repr__(self):
+        return "models.cnn.TextCNN"

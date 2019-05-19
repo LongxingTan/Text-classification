@@ -3,7 +3,7 @@ import os
 import csv
 import logging
 import tensorflow as tf
-from model_params import params,config
+from config import params,Config
 from models.bert import TextBert,get_assignment_map_from_checkpoint
 from models.bi_lstm import Bi_LSTM
 from models.lstm import LSTM
@@ -26,22 +26,8 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message
 logger = logging.getLogger(__name__)
 
 
-new_data=True  # if it's new data for model
-if not new_data:
-    # The already used data to select the model or predict, config use the saved json
-    config.from_json_file('./config.json')
-    params = config.params
-    if os.path.exists(os.path.join(params['data_dir'],'train.tf_record')):
-        tf.logging.debug("Run from the existing 'train.tf_record', the config will refer to config.json")
-    else: tf.logging.debug("Please double check, you want to run new data, with existing train.tf_record?")
-
-else:
-    # new data for model
-    tf.logging.debug('Run with new data, generate the tf_record/vocab/label, config will refer to the model_params.py')
-    create_vocab_and_label(params)
-
-
 def model_fn_builder(textmodel,params,init_checkpoint=None):
+    textmodel = eval(textmodel)
     def model_fn(features, labels, mode):
         inputs, targets = features['input_ids'], features['label_ids']
         model=textmodel(training=(mode==tf.estimator.ModeKeys.TRAIN),params=params)
@@ -90,10 +76,10 @@ def model_fn_builder(textmodel,params,init_checkpoint=None):
 
 def run_classifier(textmodel,params,data_process_class,init_checkpoint=None):
     model_fn=model_fn_builder(textmodel,params=params,init_checkpoint=init_checkpoint)
-    run_config = tf.estimator.RunConfig(save_checkpoints_secs=180, keep_checkpoint_max=5)
+    run_config = tf.estimator.RunConfig(save_checkpoints_secs=360, keep_checkpoint_max=5)
     estimator= tf.estimator.Estimator(model_fn=model_fn, model_dir=params["model_dir"],config=run_config)
 
-    if not params['file_based']:
+    if not params['use_tf_record']:
         train_input_fn=input_fn_builder(features=data_process_class.get_train_examples(data_dir=params['data_dir']),
                                         batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=True)
     else:
@@ -103,7 +89,7 @@ def run_classifier(textmodel,params,data_process_class,init_checkpoint=None):
     estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
 
 
-    if not params['file_based']:
+    if not params['use_tf_record']:
         eval_input_fn=input_fn_builder(features=data_process_class.get_dev_examples(data_dir=params['data_dir']),
                                        batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=False)
     else:
@@ -118,7 +104,7 @@ def run_classifier(textmodel,params,data_process_class,init_checkpoint=None):
             tf.logging.info(" %s = %s",key,str(result[key]))
             writer.write(" %s = %s\n"%(key,str(result[key])))
 
-    if not params['file_based']:
+    if not params['use_tf_record']:
         predict_input_fn=input_fn_builder(features=data_process_class.get_test_examples(data_dir=params['data_dir']),
                                           batch_size=params['batch_size'],seq_length=params['seq_length'],is_training=False)
     else:
@@ -136,23 +122,33 @@ def run_classifier(textmodel,params,data_process_class,init_checkpoint=None):
 
 
 if __name__ == "__main__":
+    if not params['new_data']:
+        # The already used data to select the model or predict, config use the saved json
+        config=Config()
+        config.from_json_file('./config.json')
+        params = config.params
+        if os.path.exists(os.path.join(params['data_dir'], 'train.tf_record')):
+            tf.logging.debug("Run from the existing 'train.tf_record', the config will refer to config.json")
+        else:
+            tf.logging.debug("Please double check, you want to run new data, with existing train.tf_record?")
+
+    else:
+        # new data for model
+        tf.logging.debug('Run with new data, generate the tf_record/vocab/label, config will refer to the config.py')
+        create_vocab_and_label(params)
+
     online = OnlineProcessor(params=params, seq_length=params["seq_length"], chinese_seg=params['chinese_seg'])
 
-    if new_data:
+    if params['new_data']:
         online.get_train_examples(data_dir=params['data_dir'],generate_file=True)
         online.get_dev_examples(data_dir=params['data_dir'], generate_file=True)
         online.get_test_examples(data_dir=params['data_dir'],generate_file=True)
         config.to_json_string('./config.json', params)
 
-    #run_classifier(textmodel=TextBert,params=params,data_process_class=online,init_checkpoint=params['bert_init_checkpoint'])
-    run_classifier(textmodel=TextCNN,params=params,data_process_class=online)
-    #run_classifier(textmodel=Bi_LSTM,params=params,data_process_class=online)
-    #run_classifier(textmodel=GRU_Attention,params=params,data_process_class=online)
-    #run_classifier(textmodel=Self_attention,params=params,data_process_class=online)
-    #run_classifier(textmodel=RCNN,params=params,data_process_class=online)
-    #run_classifier(textmodel=C_LSTM, params=params, data_process_class=online)
-    #run_classifier(textmodel=Capsule,params=params,data_process_class=online)
-    #run_classifier(textmodel=VDCNN, params=params, data_process_class=online)
+    if params['model']=='TextBert':
+        run_classifier(textmodel=params['model'],params=params,data_process_class=online,init_checkpoint=params['bert_init_checkpoint'])
+    else:
+        run_classifier(textmodel=params['model'],params=params,data_process_class=online)
 
 
     label, predict = [], []

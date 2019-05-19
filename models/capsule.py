@@ -1,6 +1,7 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
 
+
 class Capsule(object):
     def __init__(self, training,params):
         self.training = training
@@ -9,7 +10,7 @@ class Capsule(object):
                                                embed_size=params['embedding_size'],
                                                embedding_type=params['embedding_type'],
                                                params=params)
-        self.capsule_layer_conv=Capsule_layer_conv(shape=[3,1,64,64],vec_length=self.params['vec_length'])
+        self.capsule_layer_conv=Capsule_layer_conv(shape=[3,1,64,64],vec_length=self.params['capsule_vec_length'])
         self.capsule_layer_dense=Capsule_layer_dense(hidden_size=params['n_class'])
 
     def build(self, inputs):
@@ -80,6 +81,7 @@ class Capsule_layer_conv(Capsule_layer):
         cap=tf.reshape(cap,[-1,cap_shape[1],cap_shape[2],self.shape[-1],self.vec_length])
         cap=self.squash(cap)
         return cap
+
 
 class Capsule_layer_dense(Capsule_layer):
     def __init__(self,hidden_size):
