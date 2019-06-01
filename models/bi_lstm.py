@@ -3,7 +3,7 @@ from models._embedding import Embedding_layer
 from models._normalization import BatchNormalization,LayerNormalization
 
 
-class Bi_LSTM(object):
+class BiLSTM(object):
     def __init__(self,training,params):
         self.training=training
         self.params=params
@@ -13,7 +13,6 @@ class Bi_LSTM(object):
                                              params=params)
         self.bn_layer = BatchNormalization()
 
-
     def build(self,inputs):
         with tf.name_scope('embed'):
             embedding_outputs=self.embedding_layer(inputs)
@@ -22,8 +21,8 @@ class Bi_LSTM(object):
             embedding_outputs=tf.nn.dropout(embedding_outputs,keep_prob=self.params['embedding_dropout_keep'])
 
         with tf.name_scope('bi_lstm'):
-            cell_fw = tf.nn.rnn_cell.LSTMCell(self.params['lstm_hidden_size'])
-            cell_bw = tf.nn.rnn_cell.LSTMCell(self.params['lstm_hidden_size'])
+            cell_fw = tf.nn.rnn_cell.LSTMCell(self.params['rnn_hidden_size'])
+            cell_bw = tf.nn.rnn_cell.LSTMCell(self.params['rnn_hidden_size'])
             if self.training:
                 cell_fw = tf.nn.rnn_cell.DropoutWrapper(cell_fw, output_keep_prob=self.params['rnn_dropout_keep'])
                 cell_bw = tf.nn.rnn_cell.DropoutWrapper(cell_bw, output_keep_prob=self.params['rnn_dropout_keep'])
@@ -50,7 +49,8 @@ class Bi_LSTM(object):
             rnn_outputs=tf.nn.dropout(rnn_outputs,keep_prob=self.params['dropout_keep'])
 
         with tf.name_scope('output'):
-            self.logits = tf.layers.dense(rnn_outputs,units=self.params['n_class'],name="logit")
+            logits = tf.layers.dense(rnn_outputs,units=self.params['n_class'],name="logits")
+        return logits
 
     @staticmethod
     def _length(seq):
@@ -60,5 +60,5 @@ class Bi_LSTM(object):
         return length
 
     def __call__(self,inputs,targets=None):
-        self.build(inputs)
-        return self.logits
+        logits=self.build(inputs)
+        return logits

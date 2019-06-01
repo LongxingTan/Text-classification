@@ -51,8 +51,8 @@ class VDCNN(object):
 
         if self.training:
             self.cnn_out = tf.nn.dropout(self.cnn_out, self.params['dropout_keep'])
-        self.logits = tf.layers.dense(self.cnn_out, units=self.params['n_class'])
-
+        logits = tf.layers.dense(self.cnn_out, units=self.params['n_class'])
+        return logits
 
 
     def conv_block(self,inputs,filters,kernel_size,name,use_bias=False,shortcut=False,pool_type='max', sorted=True):
@@ -103,5 +103,5 @@ class VDCNN(object):
         return outputs
 
     def __call__(self, inputs, targets=None):
-        self.build(inputs)
-        return self.logits
+        logits=self.build(inputs)
+        return logits

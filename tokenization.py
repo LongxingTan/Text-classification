@@ -81,7 +81,6 @@ class BasicTokenizer(object):
                                                       params=self.params)
         self.stopwords=[line.strip() for line in open('./data/stop_words.txt','r',encoding='utf-8').readlines()]
 
-
     def tokenize(self,text):
         text=convert_to_unicode(text)
         text=self._clean_text(text)
@@ -150,7 +149,6 @@ class BasicTokenizer(object):
             else:
                 continue
         return " ".join(wordlist_new)
-
 
     def _whitespace_tokenize(self,text):
         text=text.strip()
@@ -238,10 +236,11 @@ class BasicTokenizer(object):
         return result
 
 
+# function test
 if __name__ == "__main__":
     from config import params
     tokenizer=BasicTokenizer(chinese_seg='word',params=params)
-    words=tokenizer._tokenize_chinese_words("针对其反映的车辆，因车辆在行驶中及冷车启动时出现异响问题送修至北京保利星徽。经销商对车辆检测后告知需要更换助力泵")
-    result=tokenizer.shorter_chinese_cut("因车辆在行驶中及冷车启动时出现异响问题送修至北京保利星徽。经销商对车辆检测后告知需要更换助力泵。客户非常不满意")
+    words=tokenizer._tokenize_chinese_words("针对其反映的车辆，因车辆在行驶中及冷车启动时出现异响问题送修,需要更换助力泵")
+    result=tokenizer.shorter_chinese_cut("因车辆在行驶中及冷车启动时出现异响问题送修至北京,客户非常不满意")
     print(words)
     print(result)

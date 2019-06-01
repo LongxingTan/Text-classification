@@ -3,22 +3,21 @@ import json
 
 
 params_important={
-    'model':"TextBert", #options: TextBert, TextCNN,Bi_LSTM, GRU_Attention, Self_attention, RCNN, C_LSTM, Capsule, VDCNN
-    'chinese_seg':'char', #options: char, word, mix
+    'model':"TextBert",  # options: TextBert, TextCNN, LSTM, BiLSTM, GRUAttention, SelfAttention, RCNN, CLSTM, TextCapsule, VDCNN
+    'chinese_seg':'char',  # options: char, word, mix
     'embedding_size':300,
-    'embedding_type':'random', # options: random, word2vec_static,word2vec_finetune,fasttext_static,fasttext_finetune,multi_channel
+    'embedding_type':'random', # options: random, word2vec_static, word2vec_finetune, fasttext_static, fasttext_finetune, multi_channel
     'embedding_dropout_keep':0.95,
     'kernel_sizes':[3,5,7],
     'filters':128,
-    'lstm_hidden_size':512,
-    'gru_hidden_size':512,
-    'attendtion_hidden_size':128,
+    'rnn_hidden_size':512,
+    'attention_hidden_size':128,
     'rnn_dropout_keep':0.95,
     'capsule_vec_length':16,
 }
 
 params_necessary=defaultdict(
-    new_data=False, # The already used data to select the model or predict, config use the saved json
+    new_data=True, # The already used data to select the model or predict, config use the saved json
     seq_length=200, # sentence length
     use_tf_record=True,
     batch_size=128,
@@ -26,7 +25,7 @@ params_necessary=defaultdict(
     learning_rate=1e-4,  # original value if use warm up
     vocab_size=None,
     n_class=None,
-    model_dir='./outputs',
+    model_dir='./outputs/checkpoint',
     data_dir='./data',
     output_dir='./outputs',
     log_dir='./log',

@@ -9,19 +9,21 @@ Note that it's just prototypes for experimental purposes only
 - Multi task learning: for more than one multi_labels
 
 ## Dependencies
+`pip install -r requirements.txt`
 - Python 3.6
 - Tensorflow 1.12.0
 
 ## Usage
 `python run_classifier.py`
-- in config.py, set the  `new_data=True`, $\mapsto$ generate the `./data/*.tf_record` $\mapsto$ utilize config.py parameters
-- in config.py, set the  `new_data=False`, $\mapsto$ utilize the data from `./data/*.tf_record` $\mapsto$ utilize config.json parameters
+- in config.py, set the  `new_data=True`, ->  generate the `./data/*.tf_record` ->  utilize config.py parameters
+- in config.py, set the  `new_data=False`, ->  utilize the data from `./data/*.tf_record` ->  utilize config.json parameters
 
 ## Pretrained
-- `mkdir pretrained`, and make sure the word or char level, and chinese word segmentation use the same as pretrained model
 - [word2vec Chinese pretrained download](https://github.com/Embedding/Chinese-Word-Vectors)
 - [fasttext Chinese pretrained download](https://fasttext.cc/docs/en/crawl-vectors.html)
 - [bert Chinese pretrained download from google](https://storage.googleapis.com/bert_models/2018_11_03/chinese_L-12_H-768_A-12.zip)
+- tips: make sure the text use the similar preprocessing trick like segmentation as the pretrained material
+- word2vec generation [reference](https://github.com/LongxingTan/Machine_learning_python/tree/master/nlp_embedding)
 
 ## Purpose
 - The classification is used to clarify the damaged part and damage type from vehicles comments

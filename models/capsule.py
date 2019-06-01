@@ -2,7 +2,7 @@ import tensorflow as tf
 from models._embedding import Embedding_layer
 
 
-class Capsule(object):
+class TextCapsule(object):
     def __init__(self, training,params):
         self.training = training
         self.params = params
@@ -32,11 +32,12 @@ class Capsule(object):
         cap_conv_shape=cap_conv.get_shape().as_list()
         #cap_flat shape [batch_size, (seq_length-4)* cap_kernel_size[-1]), vec_length]
         cap_flat=tf.reshape(cap_conv,[-1,cap_conv_shape[1]*cap_conv_shape[2]*cap_conv_shape[3],self.capsule_layer_conv.vec_length])
-        self.logits=self.capsule_layer_dense(cap_flat)
+        logits=self.capsule_layer_dense(cap_flat)
+        return logits
 
     def __call__(self, inputs, targets=None):
-        self.build(inputs)
-        return self.logits
+        logits=self.build(inputs)
+        return logits
 
 
 class Capsule_layer(tf.layers.Layer):

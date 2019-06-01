@@ -7,6 +7,6 @@
 !/models/*.py
 *.csv
 test.py
-Ensemble.py
+ensemble.py
 .DS_Store
 

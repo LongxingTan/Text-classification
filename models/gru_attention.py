@@ -1,8 +1,8 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-from models._normalization import BatchNormalization,LayerNormalization
 
-class GRU_Attention(object):
+
+class GRUAttention(object):
     def __init__(self, training,params):
         self.training = training
         self.params=params
@@ -18,22 +18,22 @@ class GRU_Attention(object):
         if self.training:
             embedding_outputs = tf.nn.dropout(embedding_outputs, self.params['embedding_dropout_keep'])
 
-        encoder_fw = tf.nn.rnn_cell.GRUCell(self.params['gru_hidden_size'])
-        encoder_bw = tf.nn.rnn_cell.GRUCell(self.params['gru_hidden_size'])
+        encoder_fw = tf.nn.rnn_cell.GRUCell(self.params['rnn_hidden_size'])
+        encoder_bw = tf.nn.rnn_cell.GRUCell(self.params['rnn_hidden_size'])
         encoder_fw = tf.nn.rnn_cell.DropoutWrapper(encoder_fw, input_keep_prob=self.params['rnn_dropout_keep'])
         encoder_bw = tf.nn.rnn_cell.DropoutWrapper(encoder_bw, input_keep_prob=self.params['rnn_dropout_keep'])
 
-        with tf.variable_scope('bi_gru') as scope:
+        with tf.variable_scope('bi_gru'):
             gru_outputs, gru_states = tf.nn.bidirectional_dynamic_rnn(cell_fw=encoder_fw, cell_bw=encoder_bw,
                                                                       inputs=embedding_outputs,
                                                                       dtype=tf.float32)
             self.encoder_output = tf.concat(gru_outputs, 2)
-            self.encoder_state = tf.concat(gru_states, 1) #
+            self.encoder_state = tf.concat(gru_states, 1)  #
 
-        with tf.variable_scope('attention') as scope:
+        with tf.variable_scope('attention'):
             self._atn_in = tf.expand_dims(self.encoder_output, axis=2)
             self.atn_w = tf.Variable(
-                tf.truncated_normal(shape=[1, 1, 2 * self.params['gru_hidden_size'], self.params['attention_hidden_size']],
+                tf.truncated_normal(shape=[1, 1, 2 * self.params['rnn_hidden_size'], self.params['attention_hidden_size']],
                                     stddev=0.1), name='atn_w')
             self.atn_b = tf.Variable(tf.zeros(shape=[self.params['attention_hidden_size']]))
             self.atn_v = tf.Variable(tf.truncated_normal(shape=[1, 1, self.params['attention_hidden_size'], 1], stddev=0.1),
@@ -46,9 +46,9 @@ class GRU_Attention(object):
             self.attention_output = tf.squeeze(_atn_out, [1], name='atn_out')
 
         with tf.variable_scope('output'):
-            self.logits=tf.layers.dense(self.attention_output,units=self.params['n_class'])
-
+            logits=tf.layers.dense(self.attention_output,units=self.params['n_class'])
+        return logits
 
     def __call__(self, inputs, targets=None):
-        self.build(inputs)
-        return self.logits
+        logits=self.build(inputs)
+        return logits

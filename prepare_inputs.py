@@ -212,3 +212,11 @@ def input_fn_builder(features,batch_size,seq_length,is_training):
         d=d.batch(batch_size=batch_size)
         return d
     return input_fn
+
+
+def serving_input_receiver_fn():
+    # This is used to define inputs to serve the model Todo: update
+    receiver_tensors={"input_x": tf.placeholder(dtype=tf.float32, shape=[None, 5, 109], name='input_x')}
+    features = {"input_x": receiver_tensors["input_x"],
+                'input_y': tf.placeholder(dtype=tf.float32, shape=[None,], name='input_y')}
+    return tf.estimator.export.ServingInputReceiver(features=features,receiver_tensors=receiver_tensors)

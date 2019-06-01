@@ -40,6 +40,7 @@ def CNN_model(sentence_length, vocabulary_size, embedding_dim,n_classes,filter_s
     #outputs=Dense(200,activation='sigmoid')(dense1)
 
     model=Model(inputs=inputs,outputs=outputs)
+    model._make_predict_function()
     model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
     print(model.summary())
     #plot_model(model,show_shapes=True,to_file='multichannel.png')
@@ -48,6 +49,7 @@ def CNN_model(sentence_length, vocabulary_size, embedding_dim,n_classes,filter_s
     with open("cnn_keras.json", "w") as json_file:
         json_file.write(cnn_keras)
     return model
+
 
 def CNN_keras_train(x_train,y_train,x_test,y_test,sentence_length,vocabulary_size,embedding_dim,n_classes,embedding_matrix):
     model = CNN_model(sentence_length=sentence_length, vocabulary_size=vocabulary_size, embedding_dim=embedding_dim,
@@ -69,6 +71,7 @@ def CNN_keras_train(x_train,y_train,x_test,y_test,sentence_length,vocabulary_siz
     fig.savefig('loss_han.png')
     plt.show()
     return model
+
 
 def CNN_keras_predict_new_data(x_new):
     if os.path.exists('cnn_keras.json'):

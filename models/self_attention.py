@@ -2,7 +2,8 @@ import tensorflow as tf
 from models._embedding import Embedding_layer
 from models._normalization import BatchNormalization,LayerNormalization
 
-class Self_attention(object):
+
+class SelfAttention(object):
     def __init__(self, training,params):
         self.training = training
         self.params=params
@@ -19,15 +20,15 @@ class Self_attention(object):
             embedding_outputs = tf.nn.dropout(embedding_outputs, self.params['embedding_dropout_keep'])
 
         with tf.variable_scope('lstm'):
-            fw_cell=tf.nn.rnn_cell.BasicLSTMCell(self.params['lstm_hidden_size'])
-            bw_cell=tf.nn.rnn_cell.BasicLSTMCell(self.params['lstm_hidden_size'])
+            fw_cell=tf.nn.rnn_cell.BasicLSTMCell(self.params['rnn_hidden_size'])
+            bw_cell=tf.nn.rnn_cell.BasicLSTMCell(self.params['rnn_hidden_size'])
             fw_cell_drop=tf.nn.rnn_cell.DropoutWrapper(fw_cell,input_keep_prob=self.params['rnn_dropout_keep'])
             bw_cell_drop=tf.nn.rnn_cell.DropoutWrapper(bw_cell,input_keep_prob=self.params['rnn_dropout_keep'])
             lstm_outs,_=tf.nn.bidirectional_dynamic_rnn(fw_cell_drop,bw_cell_drop,inputs=embedding_outputs,dtype=tf.float32)
             lstm_encoder=tf.concat(lstm_outs,axis=2)  #shape [Batch_size,sentences_len,2*lstm_hidden_size]
 
         with tf.variable_scope('attention'):
-            attention_w1=tf.Variable(tf.random_normal((2*self.params['lstm_hidden_size'],self.params['attention_hidden_size']),stddev=0.1))
+            attention_w1=tf.Variable(tf.random_normal((2*self.params['rnn_hidden_size'],self.params['attention_hidden_size']),stddev=0.1))
             attention_b1=tf.Variable(tf.random_normal([self.params['attention_hidden_size']],stddev=0.1))
 
             att=tf.tanh(tf.add(tf.tensordot(lstm_encoder,attention_w1,axes=1),attention_b1)) #shape [batch_size,sentences_len,att_size]
@@ -44,8 +45,9 @@ class Self_attention(object):
                 self.penalize=tf.square(tf.norm(Attention_t,axis=[-2,-1],ord='fro'))
 
         with tf.variable_scope('output'):
-            self.logits=tf.layers.dense(att_output,units=self.params['n_class'])
+            logits=tf.layers.dense(att_output,units=self.params['n_class'])
+        return logits
 
     def __call__(self, inputs, targets=None):
-        self.build(inputs)
-        return self.logits
+        logits=self.build(inputs)
+        return logits

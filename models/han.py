@@ -1,6 +1,6 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-from models._normalization import BatchNormalization,LayerNormalization
+
 
 class HAN(object):
     def __init__(self, training,params):
@@ -13,7 +13,7 @@ class HAN(object):
 
     def build(self, inputs):
         with tf.name_scope('embed'):
-            embedding_outputs = self.embedding_layer(inputs) #[batch_size,seq_length,embedding_dim]
+            embedding_outputs = self.embedding_layer(inputs)  #[batch_size,seq_length,embedding_dim]
 
         if self.training:
             embedding_outputs = tf.nn.dropout(embedding_outputs, self.params['embedding_dropout_keep'])
@@ -40,12 +40,12 @@ class HAN(object):
                 sentence_attention = tf.nn.dropout(sentence_attention,1.0)
 
         with tf.variable_scope('output'):
-            self.logits=tf.layers.dense(sentence_attention,units=self.params['n_class'])
-
+            logits=tf.layers.dense(sentence_attention,units=self.params['n_class'])
+        return logits
 
     def __call__(self, inputs, targets=None):
-        self.build(inputs)
-        return self.logits
+        logits=self.build(inputs)
+        return logits
 
     def bi_gru_encode(self, inputs, lstm_size,scope=None):
         with tf.variable_scope(scope or 'bi_gru'):

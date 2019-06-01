@@ -1,6 +1,6 @@
 import tensorflow as tf
 from models._embedding import Embedding_layer
-from models._normalization import BatchNormalization,LayerNormalization
+
 
 class RCNN(object):
     def __init__(self, training,params):
@@ -19,9 +19,9 @@ class RCNN(object):
             embedding_outputs = tf.nn.dropout(embedding_outputs, self.params['embedding_dropout_keep'])
 
         with tf.variable_scope('bi-rnn'):
-            fw_cell=tf.nn.rnn_cell.LSTMCell(self.params['lstm_hidden_size'])
+            fw_cell=tf.nn.rnn_cell.LSTMCell(self.params['rnn_hidden_size'])
             fw_cell=tf.nn.rnn_cell.DropoutWrapper(fw_cell,output_keep_prob=1.0)
-            bw_cell=tf.nn.rnn_cell.LSTMCell(self.params['lstm_hidden_size'])
+            bw_cell=tf.nn.rnn_cell.LSTMCell(self.params['rnn_hidden_size'])
             bw_cell=tf.nn.rnn_cell.DropoutWrapper(bw_cell,output_keep_prob=1.0)
             (outputs_fw,outputs_bw),_=tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_cell,
                                                                       cell_bw=bw_cell,
@@ -33,10 +33,9 @@ class RCNN(object):
             self.c_left = tf.concat([tf.zeros(shape), outputs_fw[:, :-1]], axis=1, name="context_left")
             self.c_right = tf.concat([outputs_bw[:, 1:], tf.zeros(shape)], axis=1, name="context_right")
 
-
         with tf.name_scope("word-representation"):
             self.x = tf.concat([self.c_left, embedding_outputs, self.c_right], axis=2, name="x")
-            embedding_size = 2 * self.params['lstm_hidden_size'] +self.params['embedding_size']
+            embedding_size = 2 * self.params['rnn_hidden_size'] + self.params['embedding_size']
 
         with tf.name_scope("text-representation"):
             W2 = tf.Variable(tf.random_uniform([embedding_size, self.params['dense_hidden_size']], -1.0, 1.0), name="W2")
@@ -47,8 +46,9 @@ class RCNN(object):
             y3 = tf.reduce_max(self.y2, axis=1)
 
         with tf.variable_scope('output'):
-            self.logits=tf.layers.dense(y3,units=self.params['n_class'])
+            logits=tf.layers.dense(y3,units=self.params['n_class'])
+        return logits
 
     def __call__(self, inputs, targets=None):
-        self.build(inputs)
-        return self.logits
+        logits=self.build(inputs)
+        return logits

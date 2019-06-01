@@ -2,6 +2,7 @@ import tensorflow as tf
 from models._embedding import Embedding_layer
 from models._normalization import BatchNormalization,LayerNormalization
 
+
 class LSTM(object):
     def __init__(self,training,params):
         self.training=training
@@ -12,7 +13,6 @@ class LSTM(object):
                                              params=params)
         self.bn_layer = BatchNormalization()
 
-
     def build(self,inputs):
         self.text_length = self._length(inputs)
         with tf.name_scope('embed'):
@@ -22,7 +22,7 @@ class LSTM(object):
             embedding_outputs=tf.nn.dropout(embedding_outputs,keep_prob=self.params['embedding_dropout_keep'])
 
         with tf.name_scope('bi_lstm'):
-            cell = tf.nn.rnn_cell.BasicLSTMCell(self.params['lstm_hidden_size'])
+            cell = tf.nn.rnn_cell.BasicLSTMCell(self.params['rnn_hidden_size'])
             if self.training:
                 cell= tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob=self.params['rnn_dropout_keep'])
 
@@ -38,11 +38,12 @@ class LSTM(object):
             rnn_outputs=tf.nn.dropout(rnn_outputs,keep_prob=self.params['dropout_keep'])
 
         with tf.name_scope('output'):
-            self.logits = tf.layers.dense(rnn_outputs,units=self.params['n_class'],name="logit")
+            logits = tf.layers.dense(rnn_outputs,units=self.params['n_class'],name="logit")
+        return logits
 
     def __call__(self,inputs,targets=None):
-        self.build(inputs)
-        return self.logits
+        logits=self.build(inputs)
+        return logits
 
     @staticmethod
     def _length(seq):

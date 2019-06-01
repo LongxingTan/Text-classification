@@ -2,7 +2,8 @@ import tensorflow as tf
 from models._embedding import Embedding_layer
 from models._normalization import BatchNormalization,LayerNormalization
 
-class C_LSTM(object):
+
+class CLSTM(object):
     def __init__(self, training,params):
         self.training = training
         self.params=params
@@ -32,8 +33,8 @@ class C_LSTM(object):
         cnn_output_concat=tf.concat(conv_output,2)
 
         with tf.name_scope('bi_lstm'):
-            cell_fw = tf.nn.rnn_cell.LSTMCell(self.params['lstm_hidden_size'])
-            cell_bw = tf.nn.rnn_cell.LSTMCell(self.params['lstm_hidden_size'])
+            cell_fw = tf.nn.rnn_cell.LSTMCell(self.params['rnn_hidden_size'])
+            cell_bw = tf.nn.rnn_cell.LSTMCell(self.params['rnn_hidden_size'])
             if self.training:
                 cell_fw = tf.nn.rnn_cell.DropoutWrapper(cell_fw, output_keep_prob=self.params['rnn_dropout_keep'])
                 cell_bw = tf.nn.rnn_cell.DropoutWrapper(cell_bw, output_keep_prob=self.params['rnn_dropout_keep'])
@@ -46,10 +47,9 @@ class C_LSTM(object):
         if self.training:
             rnn_outputs=tf.nn.dropout(rnn_outputs,self.params['dropout_keep'])
         with tf.name_scope('output'):
-            self.logits = tf.layers.dense(rnn_outputs,units=self.params['n_class'], name="logits")
-
-
+            logits = tf.layers.dense(rnn_outputs,units=self.params['n_class'], name="logits")
+        return logits
 
     def __call__(self,inputs,targets=None):
-        self.build(inputs)
-        return self.logits
+        logits=self.build(inputs)
+        return logits
