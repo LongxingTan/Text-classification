@@ -4,7 +4,7 @@
 #https://github.com/indiejoseph/doc-han-att/blob/master/model.py
 
 import tensorflow as tf
-from models_tf_archives._utils import *
+from models_archives._utils import *
 
 
 class Config():

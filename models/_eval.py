@@ -2,15 +2,15 @@ import tensorflow as tf
 from sklearn.metrics import accuracy_score, f1_score,precision_score,recall_score,roc_auc_score
 from tensorflow.python.ops.metrics_impl import _streaming_confusion_matrix
 
+
 def metric_fn():
     pass
 
 
 def create_eval(labels,predictions):
-    accuracy=tf.metrics.accuracy(labels,predictions)
+    accuracy=tf.metrics.accuracy(labels,predictions,name='acc_op')
     eval_metrics = {'acc': accuracy}
     return eval_metrics
-
 
 
 def create_eval_binary(labels,predictions):
@@ -29,8 +29,8 @@ def create_eval_binary(labels,predictions):
 
     tf.summary.scalar('accuracy', accuracy[1])
     eval_metrics = {'accuracy': accuracy,'f1':micro_f1,'auc':auc}
-
     return eval_metrics
+
 
 def create_eval_sk(labels,predictions):
     #micro average is the same for p,r and f1, so use weighted f1 here
@@ -47,6 +47,7 @@ def get_metrics_ops(labels, predictions, num_labels):
     tf.logging.info(type(cm))
     tf.logging.info(type(op))
     return (tf.convert_to_tensor(cm), op)
+
 
 def get_metrics(conf_mat, num_labels):
     precisions = []

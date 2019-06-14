@@ -9,4 +9,6 @@
 test.py
 ensemble.py
 .DS_Store
+/reference/*
+/.ipynb_checkpoints/*
 

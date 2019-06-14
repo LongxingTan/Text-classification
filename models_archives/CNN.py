@@ -1,7 +1,7 @@
 import tensorflow as tf
 import sklearn as sk
 import datetime
-from models_tf_archives._utils import *
+from models_archives._utils import *
 
 
 class Config():

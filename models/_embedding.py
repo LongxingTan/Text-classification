@@ -3,12 +3,12 @@ import os
 import bz2,gzip
 import numpy as np
 import tensorflow as tf
-#import gensim
+import gensim
 import tokenization
 from collections import Counter
 
 
-class Embedding_layer():
+class EmbeddingLayer(object):
     def __init__(self,vocab_size,embed_size,params,embedding_type='random',vocab=None):
         self.vocab_size=vocab_size
         self.embed_size=embed_size

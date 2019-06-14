@@ -1,19 +1,19 @@
 import tensorflow as tf
-from models._embedding import Embedding_layer
+from models._embedding import EmbeddingLayer
 
 
 class HAN(object):
     def __init__(self, training,params):
         self.training = training
         self.params=params
-        self.embedding_layer = Embedding_layer(vocab_size=params['vocab_size'],
+        self.embedding_layer = EmbeddingLayer(vocab_size=params['vocab_size'],
                                                embed_size=params['embedding_size'],
                                                embedding_type=params['embedding_type'],
                                                params=params)
 
     def build(self, inputs):
         with tf.name_scope('embed'):
-            embedding_outputs = self.embedding_layer(inputs)  #[batch_size,seq_length,embedding_dim]
+            embedding_outputs = self.embedding_layer(inputs)  # [batch_size,seq_length,embedding_dim]
 
         if self.training:
             embedding_outputs = tf.nn.dropout(embedding_outputs, self.params['embedding_dropout_keep'])
@@ -62,7 +62,7 @@ class HAN(object):
         return enc_outputs,enc_state
 
     def attention(self,inputs,attention_dim):
-        with tf.name_scope('attention__'):
+        with tf.name_scope('attention'):
             attention_vector=tf.get_variable(shape=[attention_dim],dtype=tf.float32,name='attention_vector')
             input_projection=tf.layers.dense(inputs,attention_dim,activation_fn=tf.tanh)
             vector_att=tf.reduce_sum(tf.multiply(input_projection,attention_vector),axis=2,keep_dims=True)

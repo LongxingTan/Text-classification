@@ -185,7 +185,6 @@ class BasicTokenizer(object):
             i+=1
         return ["".join(x) for x in output]
 
-
     def _is_control(self,char):
         if char=='\t' or char=='\n' or char=='\r':
             return False

@@ -1,12 +1,12 @@
 import tensorflow as tf
-from models._embedding import Embedding_layer
+from models._embedding import EmbeddingLayer
 
 
 class RCNN(object):
     def __init__(self, training,params):
         self.training = training
         self.params=params
-        self.embedding_layer = Embedding_layer(vocab_size=params['vocab_size'],
+        self.embedding_layer = EmbeddingLayer(vocab_size=params['vocab_size'],
                                                embed_size=params['embedding_size'],
                                                embedding_type=params['embedding_type'],
                                                params=params)

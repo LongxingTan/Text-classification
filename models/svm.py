@@ -4,7 +4,7 @@ from sklearn.externals import joblib
 from sklearn.model_selection import GridSearchCV,ShuffleSplit,cross_val_score
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
-from models_tf_archives._utils import *
+from models_archives._utils import *
 import os
 
 

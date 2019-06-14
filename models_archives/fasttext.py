@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from utils import *
+from models_archives._utils import *
 
 class fasttext():
     def __init__(self,sentence_length,vocabulary_size,embedding_dim,n_classes,embedding_matrix=None):

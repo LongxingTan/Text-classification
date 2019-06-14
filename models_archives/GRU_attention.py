@@ -1,5 +1,5 @@
 import tensorflow as tf
-from models_tf_archives._utils import *
+from models_archives._utils import *
 
 class Config():
     def __init__(self):

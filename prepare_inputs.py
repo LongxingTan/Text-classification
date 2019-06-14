@@ -1,6 +1,7 @@
 # encoding:utf-8
 import os
 import csv
+import logging
 import tensorflow as tf
 import collections
 import tokenization
@@ -44,7 +45,7 @@ class OnlineProcessor(DataProcessor):
         self.tokenizer = tokenization.BasicTokenizer(chinese_seg=chinese_seg, params=params)
         self.generate_label_map = generate_label_map
         if self.generate_label_map:
-            self.labels=set(['NA']) # add a NA to saved label_dict.txt
+            self.labels=set(['NA'])
             self.label_map = {}
         else:
             _, self.label_map=self.load_label_dict()
@@ -52,6 +53,7 @@ class OnlineProcessor(DataProcessor):
     def get_train_examples(self,data_dir,generate_file=False):
         self.train=self._create_examples(self._read_csv(os.path.join(data_dir,'train.csv')),'train')
         self.params['len_train_examples'] = len(self.train)
+        logging.info('x_train: {}'.format(len(self.train)))
 
         if self.generate_label_map:
             for i, label in enumerate(self.get_labels()):
@@ -69,6 +71,7 @@ class OnlineProcessor(DataProcessor):
     def get_dev_examples(self,data_dir,generate_file=False):
         dev=self._create_examples(self._read_csv(os.path.join(data_dir,'dev.csv')),'dev')
         self.params['len_dev_examples'] = len(dev)
+        logging.info('x_dev: {}'.format(len(dev)))
 
         if generate_file:
             self._file_based_convert_examples_to_features(dev,self.seq_length,self.tokenizer,
@@ -80,6 +83,7 @@ class OnlineProcessor(DataProcessor):
     def get_test_examples(self,data_dir,generate_file=False):
         test=self._create_examples(self._read_csv(os.path.join(data_dir, 'test.csv')), 'test')
         self.params['len_test_examples'] = len(test)
+        logging.info('x_test: {}'.format(len(test)))
 
         if generate_file:
             self._file_based_convert_examples_to_features(test,self.seq_length,self.tokenizer,
@@ -173,6 +177,7 @@ class OnlineProcessor(DataProcessor):
 def file_based_input_fn_builder(input_file,is_training,params):
     name_to_features={"input_ids":tf.FixedLenFeature([params['seq_length']],tf.int64),
                       "label_ids":tf.FixedLenFeature([],tf.int64)}
+
     def input_fn():
         d=tf.data.TFRecordDataset(input_file)
         if is_training:
@@ -215,8 +220,9 @@ def input_fn_builder(features,batch_size,seq_length,is_training):
 
 
 def serving_input_receiver_fn():
-    # This is used to define inputs to serve the model Todo: update
-    receiver_tensors={"input_x": tf.placeholder(dtype=tf.float32, shape=[None, 5, 109], name='input_x')}
-    features = {"input_x": receiver_tensors["input_x"],
-                'input_y': tf.placeholder(dtype=tf.float32, shape=[None,], name='input_y')}
+    from config import params
+    # This is used to define inputs to serve the model
+    receiver_tensors={"input_ids": tf.placeholder(dtype=tf.int32, shape=[None,params['seq_length']], name='input_ids')}
+    features = {"input_ids": receiver_tensors["input_ids"],
+                'label_ids': tf.placeholder(dtype=tf.int32, shape=[None,], name='label_ids')}
     return tf.estimator.export.ServingInputReceiver(features=features,receiver_tensors=receiver_tensors)

@@ -1,26 +1,37 @@
 # Very Deep Convolutional Neural Network
 import tensorflow as tf
-from models._embedding import Embedding_layer
+from models._embedding import EmbeddingLayer
 from models._normalization import BatchNormalization,LayerNormalization
 from models._k_max_pooling import KMaxPooling
 
 
 class VDCNN(object):
-    def __init__(self,training,params):
+    def __init__(self,training,params,depth=9):
         self.training=training
         self.params=params
-        self.embedding_layer=Embedding_layer(vocab_size=params['vocab_size'],
+        self.embedding_layer=EmbeddingLayer(vocab_size=params['vocab_size'],
                                              embed_size=params['embedding_size'],
                                              embedding_type=params['embedding_type'],
                                              params=params)
         self.bn_layer=BatchNormalization()
         self.kmax_pooling=KMaxPooling()
-        self.depth=17
-        self.num_conv_blocks = (2, 2, 2, 2)
+        #self.depth=17
+        #self.num_conv_blocks = (2, 2, 2, 2)
+        # Depth to No. Layers
+        if depth == 9:
+            self.num_conv_blocks = [2, 2, 2, 2]
+        elif depth == 17:
+            self.num_conv_blocks = [4, 4, 4, 4]
+        elif depth == 29:
+            self.num_conv_blocks = [10, 10, 4, 4]
+        elif depth == 49:
+            self.num_conv_blocks = [16, 16, 10, 6]
+        else:
+            raise ValueError('depth=%g is a not a valid setting!' % depth)
 
     def build(self,inputs):
         with tf.variable_scope("embed"):
-            embedded_outputs=self.embedding_layer(inputs) # => batch_size* seq_length* embedding_dim
+            embedded_outputs=self.embedding_layer(inputs)  # => batch_size* seq_length* embedding_dim
         if self.training:
             embedded_outputs=tf.nn.dropout(embedded_outputs,self.params['embedding_dropout_keep'])
 
@@ -32,7 +43,6 @@ class VDCNN(object):
                                      padding='same',
                                      activation=tf.nn.relu)  # => batch_size *(seq_length-kernel_size+1)* filters
             out=conv1
-
 
         for i,layer in enumerate(self.num_conv_blocks):
             with tf.variable_scope('conv_block_%s' % (i+1)):
@@ -53,7 +63,6 @@ class VDCNN(object):
             self.cnn_out = tf.nn.dropout(self.cnn_out, self.params['dropout_keep'])
         logits = tf.layers.dense(self.cnn_out, units=self.params['n_class'])
         return logits
-
 
     def conv_block(self,inputs,filters,kernel_size,name,use_bias=False,shortcut=False,pool_type='max', sorted=True):
         with tf.variable_scope('conv_block_%s' % name):
@@ -76,14 +85,13 @@ class VDCNN(object):
                 outputs = self.bn_layer(outputs,name='conv_bn3')
         return outputs
 
-
     def identity_block(self,inputs,filters,kernel_size,name,use_bias=False,shortcut=False):
         with tf.variable_scope('identity_block_%s' % name):
             block_conv1 = tf.layers.conv1d(inputs=inputs, filters=filters, kernel_size=kernel_size, strides=1,
                                            padding='same', name='identity_conv1')
             outputs= self.bn_layer(block_conv1,name='identity_bn1')
             if shortcut:
-                out = tf.add(outputs, inputs)
+                outputs = tf.add(outputs, inputs)
         return tf.nn.relu(outputs)
 
     def downsampling(self,inputs,pool_type,sorted,name):
@@ -94,7 +102,7 @@ class VDCNN(object):
                 outputs = self.kmax_pooling(inputs,name=name)
             elif pool_type == 'conv':
                 outputs = tf.layers.conv1d(inputs, filters=2 * 256, kernel_size=3, strides=2, padding='same',
-                                       name='down_conv_pool')
+                                           name='down_conv_pool')
                 outputs = self.bn_layer(outputs)
             elif pool_type is None:
                 outputs = inputs

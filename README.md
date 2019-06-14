@@ -9,7 +9,7 @@ Note that it's just prototypes for experimental purposes only
 - Multi task learning: for more than one multi_labels
 
 ## Dependencies
-`pip install -r requirements.txt`
+```pip install -r requirements.txt```
 - Python 3.6
 - Tensorflow 1.12.0
 
@@ -23,7 +23,7 @@ Note that it's just prototypes for experimental purposes only
 - [fasttext Chinese pretrained download](https://fasttext.cc/docs/en/crawl-vectors.html)
 - [bert Chinese pretrained download from google](https://storage.googleapis.com/bert_models/2018_11_03/chinese_L-12_H-768_A-12.zip)
 - tips: make sure the text use the similar preprocessing trick like segmentation as the pretrained material
-- word2vec generation [reference](https://github.com/LongxingTan/Machine_learning_python/tree/master/nlp_embedding)
+- create a word2vec pretrained model [reference](https://github.com/LongxingTan/Machine_learning_python/tree/master/nlp_embedding)
 
 ## Purpose
 - The classification is used to clarify the damaged part and damage type from vehicles comments
@@ -36,3 +36,7 @@ Note that it's just prototypes for experimental purposes only
 - Sometimes in one sample, more than one label are valid
 - Some labels have hierarchy relationship
 - imbalance issue: weighted loss, data argument, anomaly detection, upsampling and downsampling
+
+## Todo
+- Multi-task learning
+- Multi-label classification

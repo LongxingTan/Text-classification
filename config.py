@@ -3,7 +3,7 @@ import json
 
 
 params_important={
-    'model':"TextBert",  # options: TextBert, TextCNN, LSTM, BiLSTM, GRUAttention, SelfAttention, RCNN, CLSTM, TextCapsule, VDCNN
+    'model':"TextRNN",  # options: TextBert, TextCNN, TextRNN, RCNN, CLSTM, TextCapsule, VDCNN, BiLSTM, GRUAttention, SelfAttention,
     'chinese_seg':'char',  # options: char, word, mix
     'embedding_size':300,
     'embedding_type':'random', # options: random, word2vec_static, word2vec_finetune, fasttext_static, fasttext_finetune, multi_channel
@@ -17,9 +17,17 @@ params_important={
 }
 
 params_necessary=defaultdict(
-    new_data=True, # The already used data to select the model or predict, config use the saved json
-    seq_length=200, # sentence length
-    use_tf_record=True,
+    new_data=True,  # if True: use config.py and generate .tf_record, otherwise use config.json and tf_record
+    do_train=True,
+    do_eval=True,
+    do_predict=True,
+    use_rnn_cell='gru',  # options: lstm, gru
+    use_birnn=True,
+    use_attention=True,
+    use_attention_head=1,
+    use_pooling=False,
+    seq_length=200,  # sentence length
+    use_tf_record=True,  # if use binary tf_reocrd to accelerate the training
     batch_size=128,
     num_train_epochs=7,
     learning_rate=1e-4,  # original value if use warm up
@@ -28,7 +36,7 @@ params_necessary=defaultdict(
     model_dir='./outputs/checkpoint',
     data_dir='./data',
     output_dir='./outputs',
-    log_dir='./log',
+    log_dir='./logs',
     # Bert model parameters
     bert_config_file='./pretrained/bert_chinese/bert_config.json',
     bert_init_checkpoint='./pretrained/bert_chinese/bert_model.ckpt',
@@ -44,6 +52,7 @@ params_necessary=defaultdict(
     penalization=False,
     dense_hidden_size=1024,
     dropout_keep=0.95,
+    l2_scale=0.001,
 )
 
 
