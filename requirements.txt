@@ -1,5 +1,5 @@
 jieba==0.39
-numpy==1.16.2
+numpy==1.22.0
 pandas==0.24.2
 py==1.8.0
 scikit-learn==0.20.3
